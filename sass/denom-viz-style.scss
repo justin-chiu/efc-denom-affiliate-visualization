@@ -1,0 +1,48 @@
+body {margin: 0;} // remove this for embed
+
+
+#denom-affiliate-viz // all styles within are reset to initial value
+{
+    *
+    {
+        box-sizing: border-box;
+        all: initial;
+    }
+
+    div
+    {
+        display: block;
+    }
+}
+
+#denom-affiliate-viz
+{
+    #viz-wrapper
+    {
+        background-color: lightgrey; // temp
+        width: 100%;
+        padding-top: 56.25%; // 16:9 aspect ratio
+        position: relative;
+    }
+
+    #viz-container
+    {
+        position: absolute;
+        top:0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+    }
+
+    #viz-chart-wrapper
+    {
+        width: 100%; // temp
+        height: 100%; // temp
+    }
+
+    svg & #viz-chart-svg
+    {
+        
+    }
+
+}
