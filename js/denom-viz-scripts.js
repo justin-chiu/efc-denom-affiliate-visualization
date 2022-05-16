@@ -1,32 +1,18 @@
-let denomDataSrcs,
-    denomDataTemp,
+let denomDataSrc, // formerly denomDataSrcs
+    // denomDataTemp, // not needed with only one data source
+    denomDataObjs,
     denomNodes,
-    denomLinks,
-    denomDataObjs;
+    denomLinks;
 
 // DOM elements
 const viz = document.querySelector("#denom-affiliate-viz"),
     chartSVG = viz.querySelector("#viz-chart-svg");
 
 
-denomDataSrcs = // Data sources
-    [
-        {
-            desc: "cross-ref",
-            url: "https://docs.google.com/spreadsheets/d/1qup1cS0s2_p4CY46n7KiNvo1Zifq3CnlsLIk2enk2zg/edit#gid=1615120225",
-            sheetName: "Sheet1"
-        },
-        {
-            desc: "congregations",
-            url: "https://docs.google.com/spreadsheets/d/1fIJtTGk8mCbpTAIZrTuPXqF5OSiidUG681B5wI0GuE8/edit#gid=929585413",
-            sheetName: "Sheet1"
-        },
-        {
-            desc: "faith-traditions",
-            url: "https://docs.google.com/spreadsheets/d/1-iLskNGVgf5kiRlBKmdGjvChjJHmaWtaJH2TWEzjB30/edit#gid=1852950188",
-            sheetName: "Sheet1"
-        }
-    ]
+denomDataSrc = { // Data sources
+    url: "https://docs.google.com/spreadsheets/d/1uO3PUyP6WnctX-DMGOTsI3jMxcMgy297lz-TjiVYL3s/edit#gid=0",
+    sheetName: "Combined"
+}
 
 denomDataTemp = new Array(); // temporary storage of datasets
 denomDataObjs = new Array(); // unified array of all fetched denomination data
@@ -66,48 +52,100 @@ function getAPI_URL(dataSrcURL, sheetName) // google sheet URL, sheet name
     return apiBaseDomain + "/" + fileID + "/" + sheetName;
 }
 
-function fetchBuildData(apiURL, desc) {
+function fetchStartViz(apiURL) {
     fetch(apiURL)
         .then(response => response.json())
-        .then(response => buildDataObjs(response, desc));
+        .then(response => runViz(response));
 }
 
-function buildDataObjs(data, desc) { // sets property values for denomDataObjs
-    
-    console.log(data);
+function runViz(data) { // sets property values for denomDataObjs
 
-    denomDataTemp[desc] = data; // store all datasets in denomDataTemp temporarily
+    buildDataObjs(data);
+    populateLinks();
+    populateNodes();
+}
 
-    if (denomDataTemp.length == denomDataSrcs.length) {
-        
-        for (let i = 0; i < denomDataTemp["cross-ref"].length; i++) {
+function buildDataObjs(data) {
+    // target == var to place built data objects
 
-            let displayName;
+    for (let i = 0; i < data.length; i++) { // for each data object
 
-            // if Alias exists, set displayName as alias.
-            // otherwise, use name Affiliate Denominations
-            if (denomDataTemp["cross-ref"][i]["Alias"]) {
-                displayName = denomDataTemp["cross-ref"][i]["Alias"];
-            } else {
-                displayName = denomDataTemp["cross-ref"][i]["Affiliate Denominations"];
-            }
+        // convert Faith Traditions to array
+        data[i]["Faith Traditions"] = deleteChar(data[i]["Faith Traditions"]);
+        data[i]["Faith Traditions"] = data[i]["Faith Traditions"].split(",");
 
-            denomDataObjs.push (
-                {
-                    id: i,
-                    displayName: displayName
-                }
-            );
-
-
-        }
+        // convert Congregations to float
+        data[i]["Congregations"] = parseFloat(data[i]["Congregations"]);
 
     }
+    console.log(data);
+    denomDataObjs = data;
 }
 
+function populateLinks() {
+
+    let links = orderArray(denomDataObjs);
+
+}
+function populateNodes() { }
 
 
 
+
+
+// UTILITY
+
+function deleteChar(str, chars = [","], from = "end") { // delete chars from start/end of string
+
+    // str == string to delete from
+    // chars == array of characters to delete
+    // from == delete from "start" or "end"
+
+    for (let i = 0; i < chars.length; i++) {
+        if (from == "end") {
+            if (str[str.length - 1] == chars[i]) {
+                str = str.substring(0, str.length - 1);
+            }
+        } else if (from == "start") {
+            if (str[0] == chars[i]) {
+                str = str.substring(1, str.length);
+            }
+        }
+    }
+
+    return str;
+}
+
+function orderArray(data, dimension = "Congregations", dir = "small-large") { // returns array with items ordered largest to smallest
+
+    var sorted = [];
+
+    if (dir == "small-large") {
+
+        for (var i = 0; i < data.length; i++) {
+
+            if (i == 0) { // add first item
+                
+                sorted.push(data[i]);
+
+            } else {
+
+                for (let j = 0; j < sorted.length; j++) {
+                    if (data[i][dimension] < sorted[j][dimension]) {
+                        // if smaller than item in array, add in front
+                        // sorted.splice(j, 0, data[i]); // ERROR
+                        break;
+                    } else if (j == sorted.length - 1) {
+                        // if not smaller than last item in sorted array, add to end
+                        // sorted.push(data[i]); // ERROR
+                    }
+                }
+            }
+        }
+    }
+
+    return sorted;
+}
 
 
 
@@ -135,11 +173,6 @@ function setSVGDimensions(svg) // svg == element for which we are setting the wi
     svg.setAttribute("height", h);
 }
 
-function drawViz(svg) // svg == element in which we are drawing the viz
-{
-
-}
-
 
 
 
@@ -153,23 +186,16 @@ window.onload = function () {
 
     // back-end
 
-    for (let i = 0; i < denomDataSrcs.length; i++) {
-        fetchBuildData(
-            getAPI_URL(
-                denomDataSrcs[i].url,
-                denomDataSrcs[i].sheetName
-            ),
-            denomDataSrcs[i].desc
-        );
-    }
-
+    fetchStartViz(
+        getAPI_URL(
+            denomDataSrc.url,
+            denomDataSrc.sheetName
+        ));
 
     // front-end
     setSVGDimensions(chartSVG);
-    drawViz(chartSVG);
 }
 
 window.onresize = function () {
     setSVGDimensions(chartSVG);
-    drawViz(chartSVG);
 }
