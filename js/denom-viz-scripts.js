@@ -14,15 +14,15 @@ dataSrc = { // Data sources
     sheetName: "Combined"
 }
 
-dimensions = {
+dimensions = { // which columns of spreadsheet to use for viz
     cat: "Faith Traditions", // category
     num: "Congregations" // number
 }
 
 /* masterData obj custom properties
     {
-        "Node ID": 
-        "Node Type": "ghost" | "affiliate"
+        "Node ID": "aff-" | "cat-" | "origin"
+        "Node Type": "ghost" | "affiliate" | "category" | "origin"
     }
 */
 
@@ -62,21 +62,27 @@ function populatemasterData(data) { // places and sorts fetched content into mas
 
     for (let i = 0; i < data.length; i++) { // for each data object
 
-        // convert Faith Traditions to array
+        // convert "#N/A" and "" to "Other"
+        data[i][dimensions.cat] = data[i][dimensions.cat].replace("#N/A", "Other");
+        if (data[i][dimensions.cat] == "") {
+            data[i][dimensions.cat] = "Other";
+        }
+
+        // convert categories (faith traditions) to array
         data[i][dimensions.cat] = deleteChar(data[i][dimensions.cat]);
         data[i][dimensions.cat] = data[i][dimensions.cat].split(",");
 
-        // convert Congregations to float
+        // convert numbers (congregations) to float
         data[i][dimensions.num] = parseFloat(data[i][dimensions.num]);
 
         // designate as affiliate node
         data[i]["Node Type"] = "affiliate";
     }
 
-    data = orderArray(data); // order data from least to greatest Congregations count
+    data = orderArray(data); // order data from least to greatest number (congregations) count
 
     for (let i = 0; i < data.length; i++) { // assign ID to all data objects
-        data[i]["Node ID"] = i;
+        data[i]["Node ID"] = "aff-" + i;
     }
 
     masterData = data;
@@ -86,55 +92,57 @@ function populateNodes(data) {
 
     nodes = JSON.parse(JSON.stringify(data)); // set nodes as copy of data
 
-    let ghostCounter = 0;
+    let categories = new Set(); // nodes for categories (faith traditions)
+    let nodesAdded = 0; // counter
 
     for (let j = 0; j < data.length; j++) {
 
-        if (data[j][dimensions.cat].length > 1) { // if multiple categories (faith traditions)
+        let dataCats = data[j][dimensions.cat];
 
-            for (let k = 0; k < data[j][dimensions.cat].length; k++) { // for each, add a ghost node
+        for (let k = 0; k < dataCats.length; k++) { 
 
-                ghostNode(data[j], j, k, ghostCounter); // create ghostNode
-                ghostCounter++; // how many ghost nodes were added
+            categories.add(dataCats[k]); // add categories to categories set
+
+            /* // GHOST NODES
+
+            if (dataCats.length > 1) { // if multiple categories (faith traditions)
+                ghostNode(data[j], j, k, nodesAdded); // create ghostNode
+                nodesAdded++; // how many ghost nodes were added
             }
+
+            */
         }
     }
-}
 
-function ghostNode(obj, objIndex, catIndex, counter) { 
-    // objIndex == index of object in dataset
-    // catIndex == index of category (faith tradition)
+    categories = Array.from(categories);
 
-    let newGhost = {
-        "Node ID": obj["Node ID"] + "-" + catIndex,
-        "Node Type": "ghost"
-    }
+    for (let i = 0; i < categories.length; i++) { // add category (faith tradition) objects to nodes array
 
-    newGhost[dimensions.cat] = [obj[dimensions.cat][catIndex]];
-    newGhost[dimensions.num] = obj[dimensions.num];
-
-    let addAt = objIndex + counter + 1; // where to add the ghost node
-    nodes.splice(addAt, 0, newGhost);
-}
-
-
-function populateLinks(data, dimension = dimensions.cat) {
-
-    let categories = new Object();
-
-    for (let i = 0; i < data.length; i++) {
-
-        let currentCat = data[i][dimension];
-
-        if (currentCat.length == 0) {
-
-        } else if (currentCat.length == 1) {
-
-        } else {
-
+        let newCatObj = {
+            "Node ID": "cat-" + categories[i],
+            "Node Type": "category"
         }
 
+        newCatObj[dimensions.num] = 0;
+        newCatObj[dimensions.cat] = categories[i];
+
+        nodes.push(newCatObj);
     }
+
+    nodes.push({
+        "Node ID": "origin",
+        "Node Type": "origin"
+    });
+
+}
+
+function populateLinks(nodes, dimension = dimensions.cat) {
+
+    links = new Array();
+
+    // every cat is linked to origin node
+
+    // every aff is linked to one or more cat nodes
 
 }
 
@@ -196,6 +204,22 @@ function comparemasterData(objA, objB) { // compare function for Array.sort()
     return compare;
 
 } // for reference: https://www.sitepoint.com/sort-an-array-of-objects-in-javascript/
+
+function ghostNode(obj, objIndex, catIndex, counter) {
+    // objIndex == index of object in dataset
+    // catIndex == index of category (faith tradition)
+
+    let newGhost = {
+        "Node ID": obj["Node ID"] + "-" + catIndex,
+        "Node Type": "ghost"
+    }
+
+    newGhost[dimensions.cat] = [obj[dimensions.cat][catIndex]];
+    newGhost[dimensions.num] = obj[dimensions.num];
+
+    let addAt = objIndex + counter + 1; // where to add the ghost node
+    nodes.splice(addAt, 0, newGhost);
+}
 
 
 
