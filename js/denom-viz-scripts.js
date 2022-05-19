@@ -1,42 +1,35 @@
-let denomDataSrc, // formerly denomDataSrcs
-    // denomDataTemp, // not needed with only one data source
-    denomDataObjs,
-    denomNodes,
-    denomLinks;
+let dataSrc,
+    dimensions,
+    masterData,
+    nodes,
+    links;
 
 // DOM elements
-const viz = document.querySelector("#denom-affiliate-viz"),
-    chartSVG = viz.querySelector("#viz-chart-svg");
+const viz = document.querySelector("#denom-affiliate-viz");
+const chartSVG = viz.querySelector("#viz-chart-svg");
 
 
-denomDataSrc = { // Data sources
+dataSrc = { // Data sources
     url: "https://docs.google.com/spreadsheets/d/1uO3PUyP6WnctX-DMGOTsI3jMxcMgy297lz-TjiVYL3s/edit#gid=0",
     sheetName: "Combined"
 }
 
-denomDataTemp = new Array(); // temporary storage of datasets
-denomDataObjs = new Array(); // unified array of all fetched denomination data
+dimensions = {
+    cat: "Faith Traditions", // category
+    num: "Congregations" // number
+}
 
-/* data object properties
+/* masterData obj custom properties
     {
-        id:
-        displayName:
-        "congregations-name":
-        "faith-traditions-name":
-        faithTraditions: []
-        congregations:
-        
-        // optional
-        yearJoinedEFC:
-        yearFounded:
-        website:
+        "Node ID": 
+        "Node Type": "ghost" | "affiliate"
     }
 */
 
 
 
 
-
+// ------BACK END------
 
 // Fetch data and build data objs
 
@@ -58,42 +51,100 @@ function fetchStartViz(apiURL) {
         .then(response => runViz(response));
 }
 
-function runViz(data) { // sets property values for denomDataObjs
+function runViz(data) { // sets property values for masterData
 
-    buildDataObjs(data);
-    populateLinks();
-    populateNodes();
+    populatemasterData(data);
+    populateNodes(masterData);
+    populateLinks(nodes);
 }
 
-function buildDataObjs(data) {
-    // target == var to place built data objects
+function populatemasterData(data) { // places and sorts fetched content into masterData
 
     for (let i = 0; i < data.length; i++) { // for each data object
 
         // convert Faith Traditions to array
-        data[i]["Faith Traditions"] = deleteChar(data[i]["Faith Traditions"]);
-        data[i]["Faith Traditions"] = data[i]["Faith Traditions"].split(",");
+        data[i][dimensions.cat] = deleteChar(data[i][dimensions.cat]);
+        data[i][dimensions.cat] = data[i][dimensions.cat].split(",");
 
         // convert Congregations to float
-        data[i]["Congregations"] = parseFloat(data[i]["Congregations"]);
+        data[i][dimensions.num] = parseFloat(data[i][dimensions.num]);
+
+        // designate as affiliate node
+        data[i]["Node Type"] = "affiliate";
+    }
+
+    data = orderArray(data); // order data from least to greatest Congregations count
+
+    for (let i = 0; i < data.length; i++) { // assign ID to all data objects
+        data[i]["Node ID"] = i;
+    }
+
+    masterData = data;
+}
+
+function populateNodes(data) {
+
+    nodes = JSON.parse(JSON.stringify(data)); // set nodes as copy of data
+
+    let ghostCounter = 0;
+
+    for (let j = 0; j < data.length; j++) {
+
+        if (data[j][dimensions.cat].length > 1) { // if multiple categories (faith traditions)
+
+            for (let k = 0; k < data[j][dimensions.cat].length; k++) { // for each, add a ghost node
+
+                ghostNode(data[j], j, k, ghostCounter); // create ghostNode
+                ghostCounter++; // how many ghost nodes were added
+            }
+        }
+    }
+}
+
+function ghostNode(obj, objIndex, catIndex, counter) { 
+    // objIndex == index of object in dataset
+    // catIndex == index of category (faith tradition)
+
+    let newGhost = {
+        "Node ID": obj["Node ID"] + "-" + catIndex,
+        "Node Type": "ghost"
+    }
+
+    newGhost[dimensions.cat] = [obj[dimensions.cat][catIndex]];
+    newGhost[dimensions.num] = obj[dimensions.num];
+
+    let addAt = objIndex + counter + 1; // where to add the ghost node
+    nodes.splice(addAt, 0, newGhost);
+}
+
+
+function populateLinks(data, dimension = dimensions.cat) {
+
+    let categories = new Object();
+
+    for (let i = 0; i < data.length; i++) {
+
+        let currentCat = data[i][dimension];
+
+        if (currentCat.length == 0) {
+
+        } else if (currentCat.length == 1) {
+
+        } else {
+
+        }
 
     }
-    console.log(data);
-    denomDataObjs = data;
-}
-
-function populateLinks() {
-
-    let links = orderArray(denomDataObjs);
 
 }
-function populateNodes() { }
 
 
 
 
 
-// UTILITY
+
+
+// ------UTILITY------
 
 function deleteChar(str, chars = [","], from = "end") { // delete chars from start/end of string
 
@@ -116,51 +167,43 @@ function deleteChar(str, chars = [","], from = "end") { // delete chars from sta
     return str;
 }
 
-function orderArray(data, dimension = "Congregations", dir = "small-large") { // returns array with items ordered largest to smallest
+function orderArray(data, dimension = dimensions.num, reverse = false) { // returns array with items ordered largest to smallest
 
-    var sorted = [];
+    data.sort(comparemasterData);
 
-    if (dir == "small-large") {
-
-        for (var i = 0; i < data.length; i++) {
-
-            if (i == 0) { // add first item
-                
-                sorted.push(data[i]);
-
-            } else {
-
-                for (let j = 0; j < sorted.length; j++) {
-                    if (data[i][dimension] < sorted[j][dimension]) {
-                        // if smaller than item in array, add in front
-                        // sorted.splice(j, 0, data[i]); // ERROR
-                        break;
-                    } else if (j == sorted.length - 1) {
-                        // if not smaller than last item in sorted array, add to end
-                        // sorted.push(data[i]); // ERROR
-                    }
-                }
-            }
-        }
+    if (reverse) {
+        data.reverse();
     }
 
-    return sorted;
+    return data;
 }
 
+function comparemasterData(objA, objB) { // compare function for Array.sort()
+
+    const dimension = "Congregations"; // which dimension to sort by
+
+    const valueA = objA[dimension];
+    const valueB = objB[dimension];
+
+    let compare = 0; // both values are equal
+
+    if (valueA > valueB) {
+        compare = 1;
+    } else if (valueA < valueB) {
+        compare = -1;
+    }
+
+    return compare;
+
+} // for reference: https://www.sitepoint.com/sort-an-array-of-objects-in-javascript/
 
 
-// d3 arrays which take values from denomData
-denomNodes = new Array();
-denomLinks = new Array();
-
-// node data object takes most properties and values from denomData
-// link data object properties {source: "", target: ""}
 
 
 
 
 
-
+// ------FRONT-END------
 
 function setSVGDimensions(svg) // svg == element for which we are setting the width and height attributes
 {
@@ -188,8 +231,8 @@ window.onload = function () {
 
     fetchStartViz(
         getAPI_URL(
-            denomDataSrc.url,
-            denomDataSrc.sheetName
+            dataSrc.url,
+            dataSrc.sheetName
         ));
 
     // front-end
