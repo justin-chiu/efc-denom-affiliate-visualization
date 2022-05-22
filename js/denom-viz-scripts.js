@@ -1,8 +1,9 @@
 let dataSrc,
     dimensions,
     masterData,
-    nodes,
-    links;
+    categories,
+    vizNodes,
+    vizLinks;
 
 // DOM elements
 const viz = document.querySelector("#denom-affiliate-viz");
@@ -53,9 +54,9 @@ function fetchStartViz(apiURL) {
 
 function runViz(data) { // sets property values for masterData
 
-    populatemasterData(data);
-    populateNodes(masterData);
-    populateLinks(nodes);
+    masterData = populatemasterData(data);
+    vizNodes = populateNodes(masterData);
+    vizLinks = populateLinks(masterData);
 }
 
 function populatemasterData(data) { // places and sorts fetched content into masterData
@@ -85,27 +86,27 @@ function populatemasterData(data) { // places and sorts fetched content into mas
         data[i]["Node ID"] = "aff-" + i;
     }
 
-    masterData = data;
+    return data;
 }
 
 function populateNodes(data) {
 
-    nodes = JSON.parse(JSON.stringify(data)); // set nodes as copy of data
+    let nodes = JSON.parse(JSON.stringify(data)); // set nodes as copy of data
 
-    let categories = new Set(); // nodes for categories (faith traditions)
+    categories = new Set(); // nodes for categories (faith traditions)
     let nodesAdded = 0; // counter
 
     for (let j = 0; j < data.length; j++) {
 
-        let dataCats = data[j][dimensions.cat];
+        let objCats = data[j][dimensions.cat];
 
-        for (let k = 0; k < dataCats.length; k++) { 
+        for (let k = 0; k < objCats.length; k++) { 
 
-            categories.add(dataCats[k]); // add categories to categories set
+            categories.add(objCats[k]); // add categories to categories set
 
             /* // GHOST NODES
 
-            if (dataCats.length > 1) { // if multiple categories (faith traditions)
+            if (objCats.length > 1) { // if multiple categories (faith traditions)
                 ghostNode(data[j], j, k, nodesAdded); // create ghostNode
                 nodesAdded++; // how many ghost nodes were added
             }
@@ -134,16 +135,42 @@ function populateNodes(data) {
         "Node Type": "origin"
     });
 
+    return nodes;
+
 }
 
-function populateLinks(nodes, dimension = dimensions.cat) {
+function populateLinks(data, dimension = dimensions.cat) {
 
-    links = new Array();
+    let links = new Array();
 
     // every cat is linked to origin node
 
+    for (let i = 0; i < categories.length; i++) {
+        
+        let newLink = new Object();
+        newLink.source = "origin";
+        newLink.target = "cat-" + categories[i];
+        newLink[dimensions.cat] = categories[i];
+
+        links.push(newLink);
+    }
+
     // every aff is linked to one or more cat nodes
 
+    for (let i = 0; i < data.length; i++) {
+
+        for (let j = 0; j < data[i][dimensions.cat].length; j++) {
+
+            let newLink = new Object();
+            newLink.source = "cat-" + data[i][dimensions.cat][j];
+            newLink.target = data[i]["Node ID"];
+            newLink[dimensions.cat] = data[i][dimensions.cat][j];
+
+            links.push(newLink);
+        }
+    }
+
+    return links;
 }
 
 
