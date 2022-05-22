@@ -3,7 +3,7 @@ body {margin: 0;} // remove this for embed
 
 #denom-affiliate-viz // all styles within are reset to initial value
 {
-    *
+    * & :not(circle) // for which all:initial causes problems
     {
         box-sizing: border-box;
         all: initial;
@@ -19,7 +19,7 @@ body {margin: 0;} // remove this for embed
 {
     #viz-wrapper
     {
-        background-color: lightgrey; // temp
+        // background-color: lightgrey; // temp
         width: 100%;
         padding-top: 56.25%; // 16:9 aspect ratio
         position: relative;
@@ -43,6 +43,17 @@ body {margin: 0;} // remove this for embed
     svg & #viz-chart-svg
     {
         
+    }
+
+    .chart-link
+    {
+        stroke: black;
+    }
+
+    .chart-node
+    {
+        stroke: black;
+        fill-opacity: 0;
     }
 
 }

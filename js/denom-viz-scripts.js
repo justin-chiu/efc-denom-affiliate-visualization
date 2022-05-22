@@ -1,3 +1,5 @@
+// Data variables
+
 let dataSrc,
     dimensions,
     masterData,
@@ -5,9 +7,18 @@ let dataSrc,
     vizNodes,
     vizLinks;
 
+// D3 variables
+
+let simulation,
+    svgNode,
+    svgLink,
+    svgWidth,
+    svgHeight;
+
 // DOM elements
 const viz = document.querySelector("#denom-affiliate-viz");
 const chartSVG = viz.querySelector("#viz-chart-svg");
+const svgD3 = d3.select("#viz-chart-svg");
 
 
 dataSrc = { // Data sources
@@ -22,7 +33,7 @@ dimensions = { // which columns of spreadsheet to use for viz
 
 /* masterData obj custom properties
     {
-        "Node ID": "aff-" | "cat-" | "origin"
+        "id": "aff-" | "cat-" | "origin"
         "Node Type": "ghost" | "affiliate" | "category" | "origin"
     }
 */
@@ -57,6 +68,12 @@ function runViz(data) { // sets property values for masterData
     masterData = populatemasterData(data);
     vizNodes = populateNodes(masterData);
     vizLinks = populateLinks(masterData);
+
+    setupViz();
+    simulation
+        .nodes(vizNodes).on("tick", ticked);
+    simulation.force("link")
+        .links(vizLinks);
 }
 
 function populatemasterData(data) { // places and sorts fetched content into masterData
@@ -83,7 +100,7 @@ function populatemasterData(data) { // places and sorts fetched content into mas
     data = orderArray(data); // order data from least to greatest number (congregations) count
 
     for (let i = 0; i < data.length; i++) { // assign ID to all data objects
-        data[i]["Node ID"] = "aff-" + i;
+        data[i]["id"] = "aff-" + i;
     }
 
     return data;
@@ -120,7 +137,7 @@ function populateNodes(data) {
     for (let i = 0; i < categories.length; i++) { // add category (faith tradition) objects to nodes array
 
         let newCatObj = {
-            "Node ID": "cat-" + categories[i],
+            "id": "cat-" + categories[i],
             "Node Type": "category"
         }
 
@@ -131,7 +148,7 @@ function populateNodes(data) {
     }
 
     nodes.push({
-        "Node ID": "origin",
+        "id": "origin",
         "Node Type": "origin"
     });
 
@@ -163,7 +180,7 @@ function populateLinks(data, dimension = dimensions.cat) {
 
             let newLink = new Object();
             newLink.source = "cat-" + data[i][dimensions.cat][j];
-            newLink.target = data[i]["Node ID"];
+            newLink.target = data[i]["id"];
             newLink[dimensions.cat] = data[i][dimensions.cat][j];
 
             links.push(newLink);
@@ -237,7 +254,7 @@ function ghostNode(obj, objIndex, catIndex, counter) {
     // catIndex == index of category (faith tradition)
 
     let newGhost = {
-        "Node ID": obj["Node ID"] + "-" + catIndex,
+        "id": obj["id"] + "-" + catIndex,
         "Node Type": "ghost"
     }
 
@@ -265,14 +282,58 @@ function setSVGDimensions(svg) // svg == element for which we are setting the wi
 
     svg.setAttribute("width", w);
     svg.setAttribute("height", h);
+
+    svgWidth = w;
+    svgHeight = h;
 }
 
+function setupViz() {
 
+    // defining d3 force simulation
+    simulation = d3.forceSimulation()
+    .force("link", d3.forceLink().id(function(d) { // links attract
+        return d.id;
+    }))
+    .force("charge", d3.forceManyBody() // nodes repel each other
+        .strength(-2500)
+        .theta(0.5)
+        .distanceMax(-300)
+    )
+    .force("collision", d3.forceCollide().radius(function(d) { //
+        return d.radius;
+    }))
+    .force("center", d3.forceCenter(svgWidth/2, svgHeight/2)); // nodes attracted to center point
 
+    // drawing links
+    svgLink = svgD3.append("g")
+    .selectAll("line")
+    .data(vizLinks)
+    .enter().append("line")
+        .classed("chart-link", true);
 
+    // drawing nodes
+    svgNode = svgD3.append("g")
+    .selectAll("circle")
+    .data(vizNodes)
+    .enter().append("circle")
+        .classed("chart-node", true)
+        .attr("r", function(d) {
+            return d[dimensions.num] * 0.1;
+        });
+}
 
+function ticked() {
 
+    svgLink
+        .attr("x1", function(d) { return d.source.x; })
+        .attr("y1", function(d) { return d.source.y; })
+        .attr("x2", function(d) { return d.target.x; })
+        .attr("y2", function(d) { return d.target.y; });
 
+    svgNode
+        .attr("cx", function (d) { return d.x+5; })
+        .attr("cy", function(d) { return d.y-3; });
+}
 
 // ------EVENT LISTENERS------
 
