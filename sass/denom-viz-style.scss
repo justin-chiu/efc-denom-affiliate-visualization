@@ -19,7 +19,7 @@ body {margin: 0;} // remove this for embed
 {
     #viz-wrapper
     {
-        // background-color: lightgrey; // temp
+        background-color: lightgrey; // temp
         width: 100%;
         padding-top: 56.25%; // 16:9 aspect ratio
         position: relative;
@@ -47,13 +47,13 @@ body {margin: 0;} // remove this for embed
 
     .chart-link
     {
-        stroke: black;
+        stroke: rgb(160, 160, 160);
     }
 
     .chart-node
     {
-        stroke: black;
-        fill-opacity: 0;
+        fill: rgb(114, 114, 114);
+        fill-opacity: 0.5;
     }
 
 }
