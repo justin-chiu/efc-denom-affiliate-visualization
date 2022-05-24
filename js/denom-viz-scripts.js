@@ -9,7 +9,7 @@ let dataSrc,
 
 // D3 variables
 
-let simulation,
+let forceLayout,
     svgNode,
     svgLink,
     svgWidth,
@@ -41,21 +41,9 @@ dimensions = { // which columns of spreadsheet to use for viz
 
 
 
-// ------BACK END------
 
-// Fetch data and build data objs
 
-function getAPI_URL(dataSrcURL, sheetName) // google sheet URL, sheet name
-{
-    let apiBaseDomain = "https://opensheet.elk.sh";
-    let fileID = dataSrcURL.substring // get file ID string between /d/ and /edit in google sheet URL
-        (
-            dataSrcURL.indexOf("/d/") + 3,
-            dataSrcURL.indexOf("/edit")
-        );
-
-    return apiBaseDomain + "/" + fileID + "/" + sheetName;
-}
+// ------MAIN FUNCTIONS------
 
 function fetchStartViz(apiURL) {
     fetch(apiURL)
@@ -70,11 +58,107 @@ function runViz(data) { // sets property values for masterData
     vizLinks = populateLinks(masterData);
 
     setSVGDimensions(chartSVG);
-    setupViz();
-    simulation
+    defineViz();
+    forceLayout
         .nodes(vizNodes).on("tick", ticked);
-    simulation.force("link")
+    forceLayout.force("link")
         .links(vizLinks);
+}
+
+
+
+
+
+
+// ------UTILITY------
+
+function deleteChar(str, chars = [","], from = "end") { // delete chars from start/end of string
+
+    // str == string to delete from
+    // chars == array of characters to delete
+    // from == delete from "start" or "end"
+
+    for (let i = 0; i < chars.length; i++) {
+        if (from == "end") {
+            if (str[str.length - 1] == chars[i]) {
+                str = str.substring(0, str.length - 1);
+            }
+        } else if (from == "start") {
+            if (str[0] == chars[i]) {
+                str = str.substring(1, str.length);
+            }
+        }
+    }
+
+    return str;
+}
+
+function orderArray(data, dimension = dimensions.num, reverse = false) { // returns array with items ordered largest to smallest
+
+    data.sort(comparemasterData);
+
+    if (reverse) {
+        data.reverse();
+    }
+
+    return data;
+}
+
+function comparemasterData(objA, objB) { // compare function for Array.sort()
+
+    const dimension = "Congregations"; // which dimension to sort by
+
+    const valueA = objA[dimension];
+    const valueB = objB[dimension];
+
+    let compare = 0; // both values are equal
+
+    if (valueA > valueB) {
+        compare = 1;
+    } else if (valueA < valueB) {
+        compare = -1;
+    }
+
+    return compare;
+
+} // for reference: https://www.sitepoint.com/sort-an-array-of-objects-in-javascript/
+
+function ghostNode(obj, objIndex, catIndex, counter) {
+    // objIndex == index of object in dataset
+    // catIndex == index of category (faith tradition)
+
+    let newGhost = {
+        id: obj.id + "-" + catIndex,
+        type: "ghost"
+    }
+
+    newGhost[dimensions.cat] = [obj[dimensions.cat][catIndex]];
+    newGhost[dimensions.num] = obj[dimensions.num];
+
+    let addAt = objIndex + counter + 1; // where to add the ghost node
+    nodes.splice(addAt, 0, newGhost);
+}
+
+
+
+
+
+
+
+// ------DATA/BACK-END------
+
+// Fetch data and build data objs
+
+function getAPI_URL(dataSrcURL, sheetName) // google sheet URL, sheet name
+{
+    let apiBaseDomain = "https://opensheet.elk.sh";
+    let fileID = dataSrcURL.substring // get file ID string between /d/ and /edit in google sheet URL
+        (
+            dataSrcURL.indexOf("/d/") + 3,
+            dataSrcURL.indexOf("/edit")
+        );
+
+    return apiBaseDomain + "/" + fileID + "/" + sheetName;
 }
 
 function populatemasterData(data) { // places and sorts fetched content into masterData
@@ -196,134 +280,54 @@ function populateLinks(data, dimension = dimensions.cat) {
 
 
 
-
-// ------UTILITY------
-
-function deleteChar(str, chars = [","], from = "end") { // delete chars from start/end of string
-
-    // str == string to delete from
-    // chars == array of characters to delete
-    // from == delete from "start" or "end"
-
-    for (let i = 0; i < chars.length; i++) {
-        if (from == "end") {
-            if (str[str.length - 1] == chars[i]) {
-                str = str.substring(0, str.length - 1);
-            }
-        } else if (from == "start") {
-            if (str[0] == chars[i]) {
-                str = str.substring(1, str.length);
-            }
-        }
-    }
-
-    return str;
-}
-
-function orderArray(data, dimension = dimensions.num, reverse = false) { // returns array with items ordered largest to smallest
-
-    data.sort(comparemasterData);
-
-    if (reverse) {
-        data.reverse();
-    }
-
-    return data;
-}
-
-function comparemasterData(objA, objB) { // compare function for Array.sort()
-
-    const dimension = "Congregations"; // which dimension to sort by
-
-    const valueA = objA[dimension];
-    const valueB = objB[dimension];
-
-    let compare = 0; // both values are equal
-
-    if (valueA > valueB) {
-        compare = 1;
-    } else if (valueA < valueB) {
-        compare = -1;
-    }
-
-    return compare;
-
-} // for reference: https://www.sitepoint.com/sort-an-array-of-objects-in-javascript/
-
-function ghostNode(obj, objIndex, catIndex, counter) {
-    // objIndex == index of object in dataset
-    // catIndex == index of category (faith tradition)
-
-    let newGhost = {
-        id: obj.id + "-" + catIndex,
-        type: "ghost"
-    }
-
-    newGhost[dimensions.cat] = [obj[dimensions.cat][catIndex]];
-    newGhost[dimensions.num] = obj[dimensions.num];
-
-    let addAt = objIndex + counter + 1; // where to add the ghost node
-    nodes.splice(addAt, 0, newGhost);
-}
-
-
-
-
-
-
-
 // ------FRONT-END------
 
 function setSVGDimensions(svg) // svg == element for which we are setting the width and height attributes
-{
+{    
     var w, h;
 
     w = svg.parentElement.clientWidth;
     h = svg.parentElement.clientHeight;
 
-    svg.setAttribute("width", w);
+    // svg.setAttribute("width", w);
+    svg.setAttribute("width", h); // square SVG
     svg.setAttribute("height", h);
 
-    svgWidth = w;
+    // svgWidth = w;
+    svgWidth = h;
     svgHeight = h;
 }
 
-function setupViz() {
+function defineViz() {
 
     // defining d3 force simulation
-    simulation = d3.forceSimulation()
+    forceLayout = d3.forceSimulation()
     .force("link", d3.forceLink().id(function(d) { // links attract
         return d.id;
-    }))
+    })
+    .strength(1/3)
+    )
     .force("charge", d3.forceManyBody() // nodes repel each other
-        .strength(function(d) {
+        .strength(-500)
+    )
+    .force("collision", d3.forceCollide()
+        .radius(function(d) {
+            return d.radius;
+        })
+    )
+    .force("center", d3.forceCenter(svgWidth / 2, svgHeight / 2))
+    .force("radial", d3.forceRadial()
+        .x(svgWidth / 2)
+        .y(svgHeight / 2)
+        .radius(function(d) {
             switch (d.type) {
-                case "origin": return -500;
-                case "category": return -500;
-                case "affiliate": return -5000;
+                case "origin": return 0;
+                case "category": return 100;
+                case "affiliate": return 300;
             }
         })
-        .distanceMax(400)
     )
-    .force("collision", d3.forceCollide().radius(function(d) { //
-        return d.radius;
-    }))
-    .force("x", d3.forceX().x(function(d) {
-        switch (d.type) {
-            case "origin": return 0.8 * svgWidth;
-            case "category": return 0.5 * svgWidth;
-            case "affiliate": return 0.2 * svgWidth;
-        }
-    })
-        .strength(function(d) {
-            switch (d.type) {
-                case "origin": return 10;
-                case "category": return 10;
-                case "affiliate": return 0.6;
-            }
-    }))
     ;
-
 
     // drawing links
     svgLink = svgD3.append("g")
@@ -339,13 +343,13 @@ function setupViz() {
     .enter().append("circle")
         .classed("chart-node", true)
         .attr("r", function(d) {
-            if (d["Congregations"] == 0) {
+            if (d[dimensions.num] == 0) {
                 return 0;
             }
-            if (d["Congregations"] < 50) {
+            if (d[dimensions.num] < 50) {
                 return 50 * 0.1;
             } else {
-                return d["Congregations"] * 0.1;
+                return d[dimensions.num] * 0.1;
             }
         });
 }
@@ -359,23 +363,29 @@ function ticked() {
         .attr("y2", function(d) { return d.target.y; });
 
     svgNode
-        .attr("cx", function (d) { return d.x; })
-        .attr("cy", function(d) { return d.y; });
+        .attr("cx", function (d) {
+            return d.x;
+        })
+        .attr("cy", function(d) {
+            return d.y;
+        });
 }
+
+
+
+
+
+
 
 // ------EVENT LISTENERS------
 
 window.onload = function () {
-
-    // back-end
 
     fetchStartViz(
         getAPI_URL(
             dataSrc.url,
             dataSrc.sheetName
         ));
-
-    // front-end
 }
 
 window.onresize = function () {
