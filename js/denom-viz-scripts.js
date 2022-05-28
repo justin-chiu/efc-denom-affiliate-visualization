@@ -250,7 +250,8 @@ function populateNodes(data, randomOrder = true) {
 
     nodes.push({ // add central node
         id: "origin",
-        type: "origin"
+        type: "origin",
+        "Congregations": 0
     });
 
     if (randomOrder == true) {
