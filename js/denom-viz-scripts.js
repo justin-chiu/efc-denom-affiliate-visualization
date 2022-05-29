@@ -239,7 +239,8 @@ function populateNodes(data, randomOrder = true) {
 
         let catNode = {
             id: "cat-" + categories[i].name,
-            type: "category"
+            type: "category",
+            segment: categories[i].segment
         }
 
         catNode[dimensions.num] = 0;
@@ -254,7 +255,7 @@ function populateNodes(data, randomOrder = true) {
         "Congregations": 0
     });
 
-    if (randomOrder == true) {
+    if (randomOrder) {
         nodes = orderArrayRandom(nodes);
     }
 
@@ -402,7 +403,24 @@ function defineViz() {
                 return d.radius;
             })
         )
-        .force("center", d3.forceCenter(svgWidth / 2, svgHeight / 2))
+        .force("x", d3.forceX(function(d) {
+            switch (d.type) {
+                case "origin": return svgWidth * 0.9;
+                case "category": 
+                    switch (d.segment) {
+                        case 0: return svgWidth * 0.6;
+                        case 1: return svgWidth * 0.4;
+                    }
+                case "affiliate": return svgWidth * 0.2;
+            }
+        }).strength(function(d) {
+            switch (d.type) {
+                case "origin": return 1;
+                case "category": return 0.05;
+                case "affiliate": return 0.05;
+            }
+        })
+        )
         .force("radial", d3.forceRadial()
             .x(svgWidth / 2)
             .y(svgHeight / 2)
