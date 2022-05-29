@@ -228,12 +228,12 @@ function populatemasterData(data) { // places and sorts fetched content into mas
     return data;
 }
 
-function populateNodes(data, randomOrder = true) {
+function populateNodes(data, randomOrder = false) {
 
     let nodes = JSON.parse(JSON.stringify(data)); // set nodes as copy of data
 
     makeCategories(data);
-    segmentCategories(2);
+    segmentCategories(3);
 
     for (let i = 0; i < categories.length; i++) { // add category (faith tradition) objects to nodes array
 
@@ -255,7 +255,7 @@ function populateNodes(data, randomOrder = true) {
         "Congregations": 0
     });
 
-    if (randomOrder == true) {
+    if (randomOrder) {
         nodes = orderArrayRandom(nodes);
     }
 
@@ -405,19 +405,30 @@ function defineViz() {
         )
         .force("x", d3.forceX(function(d) {
             switch (d.type) {
-                case "origin": return svgWidth * 0.9;
+                case "origin": return svgWidth;
                 case "category": 
                     switch (d.segment) {
-                        case 0: return svgWidth * 0.6;
-                        case 1: return svgWidth * 0.4;
+                        case 0: return svgWidth * 0.8;
+                        case 1: return svgWidth * 0.5;
+                        case 2: return svgWidth * 0.2;
                     }
-                case "affiliate": return svgWidth * 0.2;
+                case "affiliate": 
+                    if (d[dimensions.cat].length < 2) {
+                        let thisCat = categories.find(element => element.name == d[dimensions.cat][0]);
+                        switch (thisCat.segment) {
+                            case 0: return svgWidth * 0.2;
+                            case 1: return svgWidth * 0.2;
+                            case 2: return svgWidth * 0.2;
+                        }
+                    } else {
+                        return svgWidth * 0.2;
+                    }
             }
         }).strength(function(d) {
             switch (d.type) {
-                case "origin": return 1;
-                case "category": return 0.05;
-                case "affiliate": return 0.05;
+                case "origin": return 2;
+                case "category": return 0.1;
+                case "affiliate": return 0.1;
             }
         })
         )
