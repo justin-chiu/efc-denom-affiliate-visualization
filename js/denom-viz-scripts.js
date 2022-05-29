@@ -376,12 +376,12 @@ function setSVGDimensions(svg) // svg == element for which we are setting the wi
     w = svg.parentElement.clientWidth;
     h = svg.parentElement.clientHeight;
 
-    // svg.setAttribute("width", w);
-    svg.setAttribute("width", h); // square SVG
+    svg.setAttribute("width", w);
+    // svg.setAttribute("width", h); // square SVG
     svg.setAttribute("height", h);
 
-    // svgWidth = w;
-    svgWidth = h;
+    svgWidth = w;
+    // svgWidth = h;
     svgHeight = h;
 }
 
@@ -443,15 +443,22 @@ function defineViz() {
 
 function ticked() {
 
+    let xStretch = 1.3;
+    let xOffset = svgWidth / 2;
+
     svgLink
-        .attr("x1", function (d) { return d.source.x; })
+        .attr("x1", function (d) {
+            return (d.source.x - (svgWidth / 2)) * xStretch + xOffset;
+        })
         .attr("y1", function (d) { return d.source.y; })
-        .attr("x2", function (d) { return d.target.x; })
+        .attr("x2", function (d) {
+            return (d.target.x - (svgWidth / 2)) * xStretch + xOffset;
+        })
         .attr("y2", function (d) { return d.target.y; });
 
     svgNode
         .attr("cx", function (d) {
-            return d.x;
+            return (d.x - (svgWidth / 2)) * xStretch + xOffset;
         })
         .attr("cy", function (d) {
             return d.y;
