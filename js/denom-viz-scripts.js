@@ -377,12 +377,10 @@ function setSVGDimensions(svg) // svg == element for which we are setting the wi
     w = svg.parentElement.clientWidth;
     h = svg.parentElement.clientHeight;
 
-    // svg.setAttribute("width", w);
-    svg.setAttribute("width", h); // square SVG
+    svg.setAttribute("width", w);
     svg.setAttribute("height", h);
 
-    // svgWidth = w;
-    svgWidth = h;
+    svgWidth = w;
     svgHeight = h;
 }
 
@@ -403,22 +401,22 @@ function defineViz() {
                 return d.radius;
             })
         )
-        .force("x", d3.forceX(function(d) {
+        .force("y", d3.forceY(function(d) {
             switch (d.type) {
-                case "origin": return svgWidth;
+                case "origin": return svgHeight * 0.9;
                 case "category": 
                     switch (d.segment) {
-                        case 0: return svgWidth * 0.8;
-                        case 1: return svgWidth * 0.5;
-                        case 2: return svgWidth * 0.2;
+                        case 0: return svgHeight * 0.3;
+                        case 1: return svgHeight * 0.3;
+                        case 2: return svgHeight * 0.1;
                     }
                 case "affiliate": 
                     if (d[dimensions.cat].length < 2) {
                         let thisCat = categories.find(element => element.name == d[dimensions.cat][0]);
                         switch (thisCat.segment) {
-                            case 0: return svgWidth * 0.2;
-                            case 1: return svgWidth * 0.2;
-                            case 2: return svgWidth * 0.2;
+                            case 0: return svgHeight * 0.2;
+                            case 1: return svgHeight * 0.1;
+                            case 2: return svgHeight * 0.1;
                         }
                     } else {
                         return svgWidth * 0.2;
@@ -472,15 +470,22 @@ function defineViz() {
 
 function ticked() {
 
+    let xStretch = 1.8;
+    let xOffset = svgWidth / 2;
+
     svgLink
-        .attr("x1", function (d) { return d.source.x; })
+        .attr("x1", function (d) {
+            return (d.source.x - (svgWidth / 2)) * xStretch + xOffset;
+        })
         .attr("y1", function (d) { return d.source.y; })
-        .attr("x2", function (d) { return d.target.x; })
+        .attr("x2", function (d) {
+            return (d.target.x - (svgWidth / 2)) * xStretch + xOffset;
+        })
         .attr("y2", function (d) { return d.target.y; });
 
     svgNode
         .attr("cx", function (d) {
-            return d.x;
+            return (d.x - (svgWidth / 2)) * xStretch + xOffset;
         })
         .attr("cy", function (d) {
             return d.y;
