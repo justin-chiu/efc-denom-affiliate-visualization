@@ -45,7 +45,7 @@ dimensions = { // which columns of spreadsheet to use for viz
 
 // ------MAIN FUNCTIONS------
 
-function fetchStartViz(apiURL) {
+function fetchStartViz(apiURL) { // fetch JSON via URL
     fetch(apiURL)
         .then(response => response.json())
         .then(response => runViz(response));
@@ -58,7 +58,7 @@ function runViz(data) { // sets property values for masterData
     vizLinks = populateLinks(masterData);
 
     setSVGDimensions(chartSVG);
-    defineViz();
+    defineViz(); // defines simulation, svgNode, and svgLink elements
     forceLayout
         .nodes(vizNodes).on("tick", ticked);
     forceLayout.force("link")
@@ -125,34 +125,34 @@ function orderArray(array, dimension = dimensions.num, reverse = false) { // fal
 
 // }
 
-function sortByDimension(dimension) {
+function sortByDimension(dimension) { // returns a compare function for Array.sort()
 
     return function (objA, objB) { // compare function for Array.sort()
 
         const sortBy = dimension; // which dimension to sort by
-    
+
         const valueA = objA[sortBy];
         const valueB = objB[sortBy];
-    
+
         let compare = 0; // both values are equal
-    
+
         if (valueA > valueB) {
             compare = 1;
         } else if (valueA < valueB) {
             compare = -1;
         }
-    
+
         return compare;
     }
 } // for reference: https://www.sitepoint.com/sort-an-array-of-objects-in-javascript/
 
-function orderArrayRandom(array) {
+function orderArrayRandom(array) { // randomize order of array items
     let itemsLeft = array.length;
 
     while (itemsLeft !== 0) {
         let randIndex = Math.floor(Math.random() * itemsLeft);
         itemsLeft--;
-        
+
         let tempItem = JSON.parse(JSON.stringify(array[itemsLeft]));
         array[itemsLeft] = array[randIndex];
         array[randIndex] = tempItem;
@@ -177,7 +177,9 @@ function ghostNode(obj, objIndex, catIndex, counter) {
     nodes.splice(addAt, 0, newGhost);
 }
 
-
+function radiusCircle(area) {
+    return Math.sqrt(area / Math.PI);
+}
 
 
 
@@ -243,7 +245,7 @@ function populateNodes(data, randomOrder = true) {
         }
 
         catNode[dimensions.num] = 0;
-        catNode[dimensions.cat] = categories[i].name;
+        catNode[dimensions.cat] = [categories[i].name];
 
         nodes.push(catNode);
     }
@@ -254,7 +256,7 @@ function populateNodes(data, randomOrder = true) {
         "Congregations": 0
     });
 
-    if (randomOrder == true) {
+    if (randomOrder == true) { // randomize nodes?
         nodes = orderArrayRandom(nodes);
     }
 
@@ -262,7 +264,7 @@ function populateNodes(data, randomOrder = true) {
 
 }
 
-function makeCategories(data) {
+function makeCategories(data) { // create category objects for nodes
 
     let catSet = new Set(); // list of unique categories
     categories = new Array(); // global categories array
@@ -302,7 +304,7 @@ function makeCategories(data) {
     }
 }
 
-function segmentCategories(segments, remainder = "largest_segment") {
+function segmentCategories(segments, remainder = "largest_segment") { // split categories into groups
 
     // order categories from least to greatest
     categories = orderArray(categories, "count");
@@ -340,6 +342,7 @@ function populateLinks(data, dimension = dimensions.cat) {
         newLink.source = "origin";
         newLink.target = "cat-" + categories[i].name;
         newLink[dimensions.cat] = categories[i].name;
+        newLink.type = "category";
 
         links.push(newLink);
     }
@@ -417,28 +420,78 @@ function defineViz() {
         ;
 
     // drawing links
-    svgLink = svgD3.append("g")
+    svgLink = svgD3.append("g").classed("group-links", true)
         .selectAll("line")
         .data(vizLinks)
         .enter().append("line")
-        .classed("chart-link", true);
+        .attr("class", function (d) {
+            let classString = "chart-link";
+
+            if (d.type) {
+                classString += " " + d.type;
+            }
+
+            if (d[dimensions.cat]) {
+                classString += " " + d[dimensions.cat];
+            }
+
+            return classString;
+        });
 
     // drawing nodes
-    svgNode = svgD3.append("g")
-        .selectAll("circle")
+    const pointRadius = 5; // min. circle size
+
+    svgNode = svgD3.append("g").classed("group-nodes", true)
+        .selectAll("g")
         .data(vizNodes)
-        .enter().append("circle")
+        .enter().append("g")
         .classed("chart-node", true)
-        .attr("r", function (d) {
-            if (d[dimensions.num] == 0) {
-                return 0;
+        .attr("class", function (d) {
+            let classString = "chart-node";
+            if (d.type) {
+                classString += " " + d.type;
             }
-            if (d[dimensions.num] < 50) {
-                return 50 * 0.1;
+
+            if (d[dimensions.cat]) {
+                for (let i = 0; i < d[dimensions.cat].length; i++) {
+                    classString += " " + d[dimensions.cat][i];
+                }
+            }
+
+            return classString;
+        })
+        .attr("id", function (d) {
+            return d.id;
+        });
+
+    svgNode.append("circle")
+        .attr("class", "size")
+        .attr("r", function(d) {
+            if (d.type == "affiliate") {
+                return radiusCircle(d[dimensions.num]) * 2.5 + pointRadius;
+            }
+        })
+
+    svgNode.append("circle")
+        .attr("class", "point")
+        .attr("r", function(d) {
+            if (d.type == "affiliate") {
+                return pointRadius;
             } else {
-                return d[dimensions.num] * 0.1;
+                return pointRadius;
             }
         });
+
+    // .attr("r", function (d) {
+    //     if (d[dimensions.num] == 0) {
+    //         return 0;
+    //     }
+    //     if (d[dimensions.num] < 50) {
+    //         return 50 * 0.1;
+    //     } else {
+    //         return d[dimensions.num] * 0.1;
+    //     }
+    // });
 }
 
 function ticked() {
@@ -457,6 +510,16 @@ function ticked() {
         .attr("y2", function (d) { return d.target.y; });
 
     svgNode
+        .select(".point")
+        .attr("cx", function (d) {
+            return (d.x - (svgWidth / 2)) * xStretch + xOffset;
+        })
+        .attr("cy", function (d) {
+            return d.y;
+        });
+
+    svgNode
+        .select(".size")
         .attr("cx", function (d) {
             return (d.x - (svgWidth / 2)) * xStretch + xOffset;
         })
