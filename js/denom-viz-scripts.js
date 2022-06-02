@@ -13,11 +13,13 @@ let forceLayout,
     svgNode,
     svgLink,
     svgWidth,
-    svgHeight;
+    svgHeight,
+    chartLabel;
 
 // DOM elements
 const viz = document.querySelector("#denom-affiliate-viz");
 const chartSVG = viz.querySelector("#viz-chart-svg");
+const labelsD3 = d3.select("#viz-chart-labels");
 const svgD3 = d3.select("#viz-chart-svg");
 
 
@@ -58,7 +60,7 @@ function runViz(data) { // sets property values for masterData
     vizLinks = populateLinks(masterData);
 
     setSVGDimensions(chartSVG);
-    defineViz(); // defines simulation, svgNode, and svgLink elements
+    defineViz(); // defines forceLayout, svgNode, and svgLink elements
     forceLayout
         .nodes(vizNodes).on("tick", ticked);
     forceLayout.force("link")
@@ -79,11 +81,11 @@ function deleteChar(str, chars = [","], from = "end") { // delete chars from sta
     // from == delete from "start" or "end"
 
     for (let i = 0; i < chars.length; i++) {
-        if (from == "end") {
+        if (from == "end") { // delete from end
             if (str[str.length - 1] == chars[i]) {
                 str = str.substring(0, str.length - 1);
             }
-        } else if (from == "start") {
+        } else if (from == "start") { // delete from start
             if (str[0] == chars[i]) {
                 str = str.substring(1, str.length);
             }
@@ -95,9 +97,9 @@ function deleteChar(str, chars = [","], from = "end") { // delete chars from sta
 
 function orderArray(array, dimension = dimensions.num, reverse = false) { // false returns array with items ordered largest to smallest
 
-    const sortFunction = sortByDimension(dimension);
+    const compareFunction = compareByDimension(dimension); // get a compare function for specified dimension
 
-    array.sort(sortFunction);
+    array.sort(compareFunction);
 
     if (reverse) {
         data.reverse();
@@ -106,26 +108,7 @@ function orderArray(array, dimension = dimensions.num, reverse = false) { // fal
     return array;
 }
 
-// function compareSort(objA, objB) { // compare function for Array.sort()
-
-//     const dimension = dimensions.num; // which dimension to sort by
-
-//     const valueA = objA[dimension];
-//     const valueB = objB[dimension];
-
-//     let compare = 0; // both values are equal
-
-//     if (valueA > valueB) {
-//         compare = 1;
-//     } else if (valueA < valueB) {
-//         compare = -1;
-//     }
-
-//     return compare;
-
-// }
-
-function sortByDimension(dimension) { // returns a compare function for Array.sort()
+function compareByDimension(dimension) { // returns a compare function for Array.sort()
 
     return function (objA, objB) { // compare function for Array.sort()
 
@@ -150,31 +133,17 @@ function orderArrayRandom(array) { // randomize order of array items
     let itemsLeft = array.length;
 
     while (itemsLeft !== 0) {
-        let randIndex = Math.floor(Math.random() * itemsLeft);
+        let randIndex = Math.floor(Math.random() * itemsLeft); // get random index of item
         itemsLeft--;
 
-        let tempItem = JSON.parse(JSON.stringify(array[itemsLeft]));
+        let tempItem = JSON.parse(JSON.stringify(array[itemsLeft])); // get last item
+
+        // switch random item and last item
         array[itemsLeft] = array[randIndex];
         array[randIndex] = tempItem;
     }
 
     return array;
-}
-
-function ghostNode(obj, objIndex, catIndex, counter) {
-    // objIndex == index of object in dataset
-    // catIndex == index of category (faith tradition)
-
-    let newGhost = {
-        id: obj.id + "-" + catIndex,
-        type: "ghost"
-    }
-
-    newGhost[dimensions.cat] = [obj[dimensions.cat][catIndex]];
-    newGhost[dimensions.num] = obj[dimensions.num];
-
-    let addAt = objIndex + counter + 1; // where to add the ghost node
-    nodes.splice(addAt, 0, newGhost);
 }
 
 function radiusCircle(area) {
@@ -248,7 +217,7 @@ function populateNodes(data, randomOrder = false) {
         catNode[dimensions.num] = 0;
         catNode[dimensions.cat] = [categories[i].name];
 
-        nodes.push(catNode);
+        nodes.push(catNode); // add category node to list of all nodes
     }
 
     nodes.push({ // add central node
@@ -257,7 +226,7 @@ function populateNodes(data, randomOrder = false) {
         "Congregations": 0
     });
 
-    if (randomOrder) {
+    if (randomOrder) { // randomize node order
         nodes = orderArrayRandom(nodes);
     }
 
@@ -310,20 +279,20 @@ function segmentCategories(segments, remainder = "largest_segment") { // split c
     // order categories from least to greatest
     categories = orderArray(categories, "count");
 
-    let perSegment = Math.floor(categories.length / segments);
+    let perSegment = Math.floor(categories.length / segments); // how many items per segment based on array length
 
     for (let i = 0; i < categories.length; i++) {
 
         for (let j = 0; j < segments; j++) {
             if ((i < perSegment * (j + 1)) && (i >= perSegment * j)) {
 
-                categories[i].segment = j;
+                categories[i].segment = j; // set segment for item
 
-            } else if (i >= perSegment * segments) {
+            } else if (i >= perSegment * segments) { // for remainder items
 
-                if (remainder == "largest_segment") {
+                if (remainder == "largest_segment") { // put remainder items in the last segment
                     categories[i].segment = segments - 1;
-                } else {
+                } else { // put remainder items in the first segment
                     categories[i].segment = 0;
                 }
             }
@@ -399,16 +368,16 @@ function defineViz() {
         .force("charge", d3.forceManyBody() // nodes repel each other
             .strength(-500)
         )
-        .force("collision", d3.forceCollide()
+        .force("collision", d3.forceCollide() // nodes repel if touching
             .radius(function (d) {
                 return d.radius;
             })
         )
-        .force("y", d3.forceY(function(d) {
+        .force("y", d3.forceY(function(d) { // nodes attracted to y-value
             switch (d.type) {
                 case "origin": return svgHeight * 0.9;
                 case "category": 
-                    switch (d.segment) {
+                    switch (d.segment) { // different y-value for categories depending on segment
                         case 0: return svgHeight * 0.3;
                         case 1: return svgHeight * 0.3;
                         case 2: return svgHeight * 0.1;
@@ -416,7 +385,7 @@ function defineViz() {
                 case "affiliate": 
                     if (d[dimensions.cat].length < 2) {
                         let thisCat = categories.find(element => element.name == d[dimensions.cat][0]);
-                        switch (thisCat.segment) {
+                        switch (thisCat.segment) { // different y-value for affiliates depending on category
                             case 0: return svgHeight * 0.2;
                             case 1: return svgHeight * 0.1;
                             case 2: return svgHeight * 0.1;
@@ -425,7 +394,7 @@ function defineViz() {
                         return svgWidth * 0.2;
                     }
             }
-        }).strength(function(d) {
+        }).strength(function(d) { // different force strength depending on type
             switch (d.type) {
                 case "origin": return 2;
                 case "category": return 0.1;
@@ -433,10 +402,10 @@ function defineViz() {
             }
         })
         )
-        .force("radial", d3.forceRadial()
+        .force("radial", d3.forceRadial() // nodes attracted to a circular path
             .x(svgWidth / 2)
             .y(svgHeight / 2)
-            .radius(function (d) {
+            .radius(function (d) { // different-sized circular path depending on type
                 switch (d.type) {
                     case "origin": return 0;
                     case "category": return 100;
@@ -447,19 +416,19 @@ function defineViz() {
         ;
 
     // drawing links
-    svgLink = svgD3.append("g").classed("group-links", true)
+    svgLink = svgD3.append("g").classed("group-links", true) // put all links in a <g>
         .selectAll("line")
         .data(vizLinks)
         .enter().append("line")
         .attr("class", function (d) {
-            let classString = "chart-link";
+            let classString = "chart-link"; // all links have this class
 
             if (d.type) {
-                classString += " " + d.type;
+                classString += " " + d.type; // add link type as class
             }
 
             if (d[dimensions.cat]) {
-                classString += " " + d[dimensions.cat];
+                classString += " " + d[dimensions.cat]; // add link category as class
             }
 
             return classString;
@@ -468,39 +437,39 @@ function defineViz() {
     // drawing nodes
     const pointRadius = 5; // min. circle size
 
-    svgNode = svgD3.append("g").classed("group-nodes", true)
+    svgNode = svgD3.append("g").classed("group-nodes", true) // put all nodes in a <g>
         .selectAll("g")
         .data(vizNodes)
-        .enter().append("g")
-        .classed("chart-node", true)
+        .enter().append("g") // each node has own <g>
+        .classed("chart-node", true) // all nodes have this class
         .attr("class", function (d) {
             let classString = "chart-node";
             if (d.type) {
-                classString += " " + d.type;
+                classString += " " + d.type; // add node type as class
             }
 
             if (d[dimensions.cat]) {
                 for (let i = 0; i < d[dimensions.cat].length; i++) {
-                    classString += " " + d[dimensions.cat][i];
+                    classString += " " + d[dimensions.cat][i]; // add node category as class
                 }
             }
 
             return classString;
         })
         .attr("id", function (d) {
-            return d.id;
+            return d.id; // add node ID as id attribute
         });
 
-    svgNode.append("circle")
-        .attr("class", "size")
-        .attr("r", function(d) {
+    svgNode.append("circle") // add a second circle
+        .attr("class", "size") // circle type: size
+        .attr("r", function(d) { // area of circle depends on dimensions.num (Congregataions)
             if (d.type == "affiliate") {
                 return radiusCircle(d[dimensions.num]) * 2.5 + pointRadius;
             }
         })
 
-    svgNode.append("circle")
-        .attr("class", "point")
+    svgNode.append("circle") // every node has the same point circle in the middle
+        .attr("class", "point") // circle type: point
         .attr("r", function(d) {
             if (d.type == "affiliate") {
                 return pointRadius;
@@ -509,35 +478,44 @@ function defineViz() {
             }
         });
 
-    // .attr("r", function (d) {
-    //     if (d[dimensions.num] == 0) {
-    //         return 0;
-    //     }
-    //     if (d[dimensions.num] < 50) {
-    //         return 50 * 0.1;
-    //     } else {
-    //         return d[dimensions.num] * 0.1;
-    //     }
-    // });
+    chartLabel = labelsD3.selectAll(".chart-label")
+        .data(vizNodes)
+        .enter().append("div")
+        .attr("class", function(d) {
+            let classString = "chart-label";
+
+            if (d.type == "category") {
+                classString += " " + "label-true";
+            }
+
+            return classString;
+        })
+        .text(function(d) {
+            if (d.type == "category") {
+                return d[dimensions.cat][0];
+            }
+        })
+        ;
+
 }
 
 function ticked() {
 
-    let xStretch = 1.8;
+    let xStretch = 1.8; // stretch the diagram
     let xOffset = svgWidth / 2;
 
     svgLink
         .attr("x1", function (d) {
-            return (d.source.x - (svgWidth / 2)) * xStretch + xOffset;
+            return (d.source.x - (svgWidth / 2)) * xStretch + xOffset; // stretch added
         })
         .attr("y1", function (d) { return d.source.y; })
         .attr("x2", function (d) {
-            return (d.target.x - (svgWidth / 2)) * xStretch + xOffset;
+            return (d.target.x - (svgWidth / 2)) * xStretch + xOffset; // stretch added
         })
         .attr("y2", function (d) { return d.target.y; });
 
     svgNode
-        .select(".point")
+        .select(".point") // acts inside <g> on circle with class "point"
         .attr("cx", function (d) {
             return (d.x - (svgWidth / 2)) * xStretch + xOffset;
         })
@@ -546,12 +524,26 @@ function ticked() {
         });
 
     svgNode
-        .select(".size")
+        .select(".size") // acts inside <g> on circle with class "size"
         .attr("cx", function (d) {
             return (d.x - (svgWidth / 2)) * xStretch + xOffset;
         })
         .attr("cy", function (d) {
             return d.y;
+        });
+
+    chartLabel
+        .attr("style", function(d) {
+            
+            let styleString = "";
+
+            let xVal = (d.x - (svgWidth / 2)) * xStretch + xOffset;
+            let yVal = d.y;
+
+            styleString += "left:" + xVal + "px;";
+            styleString += "top: " + yVal + "px;";
+
+            return styleString;
         });
 }
 
