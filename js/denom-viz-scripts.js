@@ -230,18 +230,19 @@ function populatemasterData(data) { // places and sorts fetched content into mas
     return data;
 }
 
-function populateNodes(data, randomOrder = true) {
+function populateNodes(data, randomOrder = false) {
 
     let nodes = JSON.parse(JSON.stringify(data)); // set nodes as copy of data
 
     makeCategories(data);
-    segmentCategories(2);
+    segmentCategories(3);
 
     for (let i = 0; i < categories.length; i++) { // add category (faith tradition) objects to nodes array
 
         let catNode = {
             id: "cat-" + categories[i].name,
-            type: "category"
+            type: "category",
+            segment: categories[i].segment
         }
 
         catNode[dimensions.num] = 0;
@@ -256,7 +257,7 @@ function populateNodes(data, randomOrder = true) {
         "Congregations": 0
     });
 
-    if (randomOrder == true) { // randomize nodes?
+    if (randomOrder) {
         nodes = orderArrayRandom(nodes);
     }
 
@@ -380,11 +381,9 @@ function setSVGDimensions(svg) // svg == element for which we are setting the wi
     h = svg.parentElement.clientHeight;
 
     svg.setAttribute("width", w);
-    // svg.setAttribute("width", h); // square SVG
     svg.setAttribute("height", h);
 
     svgWidth = w;
-    // svgWidth = h;
     svgHeight = h;
 }
 
@@ -405,7 +404,35 @@ function defineViz() {
                 return d.radius;
             })
         )
-        .force("center", d3.forceCenter(svgWidth / 2, svgHeight / 2))
+        .force("y", d3.forceY(function(d) {
+            switch (d.type) {
+                case "origin": return svgHeight * 0.9;
+                case "category": 
+                    switch (d.segment) {
+                        case 0: return svgHeight * 0.3;
+                        case 1: return svgHeight * 0.3;
+                        case 2: return svgHeight * 0.1;
+                    }
+                case "affiliate": 
+                    if (d[dimensions.cat].length < 2) {
+                        let thisCat = categories.find(element => element.name == d[dimensions.cat][0]);
+                        switch (thisCat.segment) {
+                            case 0: return svgHeight * 0.2;
+                            case 1: return svgHeight * 0.1;
+                            case 2: return svgHeight * 0.1;
+                        }
+                    } else {
+                        return svgWidth * 0.2;
+                    }
+            }
+        }).strength(function(d) {
+            switch (d.type) {
+                case "origin": return 2;
+                case "category": return 0.1;
+                case "affiliate": return 0.1;
+            }
+        })
+        )
         .force("radial", d3.forceRadial()
             .x(svgWidth / 2)
             .y(svgHeight / 2)
@@ -496,7 +523,7 @@ function defineViz() {
 
 function ticked() {
 
-    let xStretch = 1.3;
+    let xStretch = 1.8;
     let xOffset = svgWidth / 2;
 
     svgLink

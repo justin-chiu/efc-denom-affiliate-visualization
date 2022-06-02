@@ -34,7 +34,7 @@ $bg-colour: lightgrey;
     #viz-container
     {
         display: flex;
-        flex-direction: row;
+        flex-direction: column;
         width: 100%;
         height: 100%;
     }
@@ -49,10 +49,23 @@ $bg-colour: lightgrey;
         justify-content: space-between;
     }
 
+    #viz-header {
+        display: flex;
+        flex-direction: row;
+        height: 30%;
+    }
+
+    #viz-header-left {
+    }
+
+    #viz-header-right {
+        flex-grow: 1;
+    }
+
     #viz-chart
     {
-        flex-grow: 2;
-        max-width: 66.67%;
+        width: 100%;
+        flex-grow: 1;
     }
 
     svg & #viz-chart-svg
@@ -91,7 +104,7 @@ $bg-colour: lightgrey;
     }
 
     h1 {
-        font-size: 3rem;
+        font-size: 2.5rem;
     }
     
     p {
