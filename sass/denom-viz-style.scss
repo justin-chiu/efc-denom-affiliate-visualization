@@ -1,12 +1,15 @@
 body {margin: 0;} // remove this for embed
 
 $bg-colour: lightgrey;
+$viz-margin-vert: 3rem;
 
 #denom-affiliate-viz
 {
     *
     {
         box-sizing: border-box;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
     }
 }
 
@@ -28,7 +31,7 @@ $bg-colour: lightgrey;
         width: 100%;
         height: 100%;
         background-color: $bg-colour;
-        padding: 2.5rem;      
+        // padding: 2.5rem;      
     }
 
     #viz-container
@@ -52,21 +55,105 @@ $bg-colour: lightgrey;
     #viz-header {
         display: flex;
         flex-direction: row;
-        height: 30%;
+        
+        margin-top: $viz-margin-vert;
     }
 
     #viz-header-left {
+        color: white;
     }
+
+    #header-left-top, #header-left-bottom {
+        padding-left: 5rem;
+    }
+
+    #header-left-top {
+        background-color: darkslategrey;
+        padding-top: 2.2rem;
+        padding-bottom: 1.9rem;
+        padding-right: 2.2rem;
+    }
+
+    #header-left-bottom {
+        width: fit-content;
+        background-color: darkgrey;
+        padding-top: 1.25rem;
+        padding-bottom: 1.25rem;
+        padding-right: 2.2rem;
+
+        font-family: 'Raleway', sans-serif;
+        font-size: 1rem;
+        font-weight: 700;
+    }
+
+
+    // CAPTION
 
     #viz-header-right {
         flex-grow: 1;
+        margin-top: 2.2rem;
+        margin-bottom: 1.25rem;
+        margin-left: 20%;
+        margin-right: 5.5rem;
+
+        display: flex;
+        justify-content: flex-end;
+        align-items: flex-start;
     }
+
+    .caption-container {
+
+        &.border-right {}
+    }
+
+    .caption-heading {
+
+        font-family: 'Raleway', sans-serif;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        line-height: 1.15;
+
+        &.xl {font-size: 7rem;}
+        &.lg {font-size: 4rem;}
+        &.md {font-size: 3rem;}
+    }
+
+    .caption-subhead-caps {
+        font-family: 'Raleway', sans-serif;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        line-height: 1.15;
+    }
+
+    .caption-text {
+
+        font-family: 'Lora', serif;
+        font-size: 2.25rem;
+        font-weight: 400;
+        line-height: 1.4;
+
+        &.bold {font-weight: 700;}
+
+    }
+
+    .color-square {
+
+        padding-top: 100%;
+
+        &.text-size {}
+        &.heading-size {}
+    }
+
+    
+    // CHART
 
     #viz-chart
     {
         width: 100%;
         flex-grow: 1;
         position: relative;
+        margin: 0;
+        margin-bottom: $viz-margin-vert;
     }
 
     svg & #viz-chart-svg
@@ -107,7 +194,7 @@ $bg-colour: lightgrey;
             }
 
             .size {
-                fill: rgb(114, 114, 114);
+                fill: rgb(114, 114, 114); 
                 fill-opacity: 0.7;
             }
         }
@@ -119,17 +206,29 @@ $bg-colour: lightgrey;
 
         background-color: $bg-colour;
 
-        // padding: 0.4rem 0.9rem 0.5rem 0.9rem;
-        // border-radius: 50ch;
+        font-family: 'Raleway', sans-serif;
+        font-size: 1rem;
+        font-weight: 600;
 
+    }
+
+
+    // DESIGN
+
+    .logo {
+        width: 12.5rem;
+        mix-blend-mode: lighten;
     }
 
     h1 {
-        font-size: 2.5rem;
+        font-size: 3rem;
+        font-family: 'Alice', serif;
+        margin: 0;
+        font-weight: normal;
     }
     
     p {
-        font-size: 1.25rem;
+        margin: 0;
     }
 
 }

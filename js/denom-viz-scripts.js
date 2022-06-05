@@ -19,6 +19,10 @@ let forceLayout,
 // DOM elements
 const viz = document.querySelector("#denom-affiliate-viz");
 const chartSVG = viz.querySelector("#viz-chart-svg");
+const captionA = viz.querySelector("#caption-a");
+const captionB = viz.querySelector("#caption-b");
+
+// D3 elements
 const labelsD3 = d3.select("#viz-chart-labels");
 const svgD3 = d3.select("#viz-chart-svg");
 
@@ -133,10 +137,10 @@ function orderArrayRandom(array) { // randomize order of array items
     let itemsLeft = array.length;
 
     while (itemsLeft !== 0) {
-        let randIndex = Math.floor(Math.random() * itemsLeft); // get random index of item
+        const randIndex = Math.floor(Math.random() * itemsLeft); // get random index of item
         itemsLeft--;
 
-        let tempItem = JSON.parse(JSON.stringify(array[itemsLeft])); // get last item
+        const tempItem = JSON.parse(JSON.stringify(array[itemsLeft])); // get last item
 
         // switch random item and last item
         array[itemsLeft] = array[randIndex];
@@ -153,14 +157,16 @@ function radiusCircle(area) {
 
 
 
+
+
 // ------DATA/BACK-END------
 
 // Fetch data and build data objs
 
 function getAPI_URL(dataSrcURL, sheetName) // google sheet URL, sheet name
 {
-    let apiBaseDomain = "https://opensheet.elk.sh";
-    let fileID = dataSrcURL.substring // get file ID string between /d/ and /edit in google sheet URL
+    const apiBaseDomain = "https://opensheet.elk.sh";
+    const fileID = dataSrcURL.substring // get file ID string between /d/ and /edit in google sheet URL
         (
             dataSrcURL.indexOf("/d/") + 3,
             dataSrcURL.indexOf("/edit")
@@ -537,8 +543,8 @@ function ticked() {
             
             let styleString = "";
 
-            let xVal = (d.x - (svgWidth / 2)) * xStretch + xOffset;
-            let yVal = d.y;
+            const xVal = (d.x - (svgWidth / 2)) * xStretch + xOffset;
+            const yVal = d.y;
 
             styleString += "left:" + xVal + "px;";
             styleString += "top: " + yVal + "px;";
@@ -548,6 +554,90 @@ function ticked() {
 }
 
 
+
+
+// ------INTERACTIONS------
+
+// whether elements have been created
+let fullScreen = false;
+let catCaption = false; // category caption created?
+let affCaption = false; // affiliate caption created?
+
+function captionDelete() { // delete all caption elements except containers
+    captionA.innerHTML = "";
+    captionB.innerHTML = "";
+    catCaption = false;
+    affCaption = false;
+}
+
+function captionDefault() { // create and populate default caption
+    
+    captionDelete();
+
+    // caption A
+
+    const affCountNum = document.createElement("div"); // number of nodes (affiliates) in xl text
+    affCountNum.setAttribute("class", "caption-heading xl");
+    affCountNum.innerText = masterData,length;
+
+    const affCountNumText = document.createElement("div"); // the text "denomination affiliates" next to digits
+    affCountNumText.setAttribute("class", "caption-text bold");
+    affCountNumText.innerHTML = "denomination<br>affiliates";
+
+    captionA.append(affCountNum);
+    captionA.append(affCountText);
+
+    // caption B
+
+    const catCountNum = document.createElement("span"); // bold digits for category (faith traditions) count
+    catCountNum.setAttribute("class", "caption-text bold");
+    catCountNum.innerText = categories.length; // NEED TO SUBTRACT "Other" category
+
+    const catCountText = document.createElement("div"); // category (faith traditions) count and text
+    catCountText.setAttribute("class", "caption-text");
+    catCountText.append(catCountNum);
+    catCountText.innerHTML += " faith traditions";
+
+    const congCountNum = document.createElement("span"); // bold digits for congregation count
+    congCountNum.setAttribute("class", "caption-text bold");
+    congCountNum.innerText = ""; // CALCULATE # of congregations
+    
+    const congCountText = document.createElement("div"); // congregation count and text
+    congCountText.append(congCountNum);
+    congCountText.setAttribute("class", "caption-text");
+    congCountText.innerHTML += " total congregations";
+
+    captionB.append(catCountText);
+    captionB.append(congCountText);
+}
+
+function captionCategory() {
+
+}
+
+function captionAffiliate() {
+
+}
+
+function focusNothing() {
+
+}
+
+function focusCategory() {
+
+}
+
+function focusAffiliate() {
+
+}
+
+function resetViz() {
+
+}
+
+function toggleFullScreen() {
+
+}
 
 
 

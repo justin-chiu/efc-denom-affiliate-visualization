@@ -5,8 +5,10 @@
     <title>EFC Denominational Affiliates</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-    <link rel="preconnect" href="https://fonts.gstatic.com">
-    <!-- include this when embedding --><link href="css/denom-viz-style.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Alice&family=Lora:wght@400;600;700&family=Raleway:wght@600;700;800&display=swap" rel="stylesheet">
+    <link href="css/denom-viz-style.css" rel="stylesheet">
     <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
 
@@ -14,20 +16,29 @@
     <div id="denom-affiliate-viz">
         <div id="viz-wrapper">
             <div id="viz-container">
-                <div id="viz-header">
+                <header id="viz-header">
                     <div id="viz-header-left">
-                        <p>EFC • The Evangelical Felowship of Canada (logo)</p>
-                        <h1>Denomination Affiliates</h1>
+                        <div id="header-left-top">
+                            <img class="logo" src="assets/efc-logo-horiz-rev.png">
+                            <h1>Denomination<br>Affiliates</h1>
+                        </div>
+                        <div id="header-left-bottom">
+                            <p>a dynamic data visualization</p>
+                        </div>
                     </div>
                     <div id="viz-header-right">
+                        <div class="caption-container border-right" id="caption-a">
+                        </div>
+                        <div class="caption-container" id="caption-b">
+                        </div>
                     </div>
-                </div>
-                <div id="viz-chart">
+                </header>
+                <figure id="viz-chart">
                     <svg id="viz-chart-svg">
                     </svg>
                     <div id="viz-chart-labels">
                     </div>
-                </div>
+                </figure>
                 <!--<div id="viz-footer">
                     <p>Visualization by Justin Chiu • <a href="https://d3js.org" target="_blank">d3.js</a> • <a href="https://github.com/benborgers/opensheet" target="_blank">opensheet</a></p>
 
