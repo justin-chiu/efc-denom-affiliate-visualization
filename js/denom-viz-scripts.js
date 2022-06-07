@@ -35,7 +35,8 @@ dataSrc = { // Data sources
 
 dimensions = { // which columns of spreadsheet to use for viz
     cat: "Faith Traditions", // category
-    num: "Congregations" // number
+    num: "Congregations", // number
+    name: "Name (Display)" // display name
 }
 
 dataInfo = new Object();
@@ -289,15 +290,15 @@ function makeCategories(data) { // create category objects for nodes
             if (catSet.has(newCat[k])) { // if category already in set
 
                 let catObj = categories.find(element => element.name == newCat[k]);
-                catObj.count++; // add to count
+                catObj.count++; // add to affiliates count
+                catObj[dimensions.num] += data[j][dimensions.num];
 
             } else { // if category not in set
 
-                categories.push({ // create a category object
-                    name: newCat[k],
-                    count: 1
-                });
+                let catObj = {name: newCat[k], count: 1}
+                catObj[dimensions.num] = data[j][dimensions.num];
 
+                categories.push(catObj); // create a category object
             }
 
             catSet.add(newCat[k]); // add category to set
@@ -648,12 +649,98 @@ function captionDefault() { // create and populate default caption
     captionB.append(congCountText);
 }
 
-function captionCategory() {
+function captionCategory(catObj) { // takes category object, creates and populates category caption
+    
+    captionDelete();
+
+    // caption A
+
+    const catSquare = newElement("div", "color-square heading-size"); // color square for category
+    // catSquare.style.backgroundColor = catObj.color;
+
+    const catHeading = newElement("div", "caption-heading lg"); // category name in heading
+    catHeading.innerText = catObj.name;
+
+    captionA.append(catSquare);
+    captionA.append(catHeading);
+
+    // caption B
+
+    const catSubHead = newElement("div", "caption-subhead-caps");
+    catSubHead.innerText = "Faith Tradition";
+
+    // how many affiliates in category
+    const catAffNum = newElement("span", "caption-text bold");
+    catAffNum.innerText = catObj.count;
+    const catAffText = newElement("div", "caption-text");
+    catAffText.append(catAffNum);
+    catAffText.innerHTML += " affiliates";
+
+    // how many congregations in category
+    const catCongNum = newElement("span", "caption-text bold");
+    catCongNum.innerText = catObj[dimensions.num];
+    const catCongText = newElement("div", "caption-text");
+    catCongText.append(catCongNum);
+    catCongText.innerHTML += " total congregations";
+
+    captionB.append(catSubHead);
+    captionB.append(catAffText);
+    captionB.append(catCongText);
+}
+
+function captionAffiliate(dataObj) { // takes affiliate data object, creates and populates affiliate caption
+
+    captionDelete();
+    
+    // caption A
+
+    const affHeading = newElement("div", "caption-heading md");
+    affHeading.innerText = dataObj[dimensions.name];
+
+    captionA.append(affHeading);
+
+    // caption B
+
+    const affSubHead = newElement("div", "caption-subhead-caps");
+    affSubHead.innerText = "Affiliate";
+
+    const affCongNum = newElement("span", "caption-text bold");
+    affCongNum.innerText = dataObj[dimensions.num];
+
+    const affCongText = newElement("div", "caption-text");
+    affCongText.append(affCongNum);
+    affCongText.innerHTML += " congregations";
+
+    captionB.append(affSubHead);
+    // captionB.append (
+    //     captionAffCats(dataObj[dimensions.cat])
+    // );
+
 
 }
 
-function captionAffiliate() {
+function captionAffCats(affCats) { // takes dataObj dimensions.cat property
 
+    const catContainer = newElement("div"); // container for all category references
+
+    for (let i = 0; i < affCats.length; i++) { // for each of dataObj's categories
+
+        const thisCat = categories.find(element => element.name == affCats[i]); // find category object
+
+        const catSquare = newElement("div", "color-square text-size");
+        // catSquare.style.backgroundColor = thisCat.color;
+
+        const catName = newElement("div", "caption-text");
+        catName.innerText = thisCat.name;
+        
+        const catRef = newElement("div", "caption-flex");
+        catRef.append(catSquare);
+        catRef.append(catName);
+
+        catContainer.append(catRef);
+    }
+
+    return catContainer;
 }
 
 function focusNothing() {

@@ -134,6 +134,7 @@ $viz-margin-vert: 3rem;
         font-weight: 700;
         letter-spacing: 0.03em;
         line-height: 1.15;
+        text-transform: uppercase;
     }
 
     .caption-text {
@@ -150,9 +151,10 @@ $viz-margin-vert: 3rem;
     .color-square {
 
         padding-top: 100%;
+        background-color: darkgrey;
 
         &.text-size {}
-        &.heading-size {}
+        &.heading-size {width: 4rem;}
     }
 
     
