@@ -2,6 +2,7 @@
 
 let dataSrc,
     dimensions,
+    dataInfo,
     masterData,
     categories,
     vizNodes,
@@ -37,6 +38,8 @@ dimensions = { // which columns of spreadsheet to use for viz
     num: "Congregations" // number
 }
 
+dataInfo = new Object();
+
 /* masterData obj custom properties
     {
         id: "aff-" | "cat-" | "origin"
@@ -59,16 +62,13 @@ function fetchStartViz(apiURL) { // fetch JSON via URL
 
 function runViz(data) { // sets property values for masterData
 
-    masterData = populatemasterData(data);
+    masterData = populateMasterData(data);
     vizNodes = populateNodes(masterData);
     vizLinks = populateLinks(masterData);
 
     setSVGDimensions(chartSVG);
-    defineViz(); // defines forceLayout, svgNode, and svgLink elements
-    forceLayout
-        .nodes(vizNodes).on("tick", ticked);
-    forceLayout.force("link")
-        .links(vizLinks);
+    defineViz(); // defines viz forceLayout, nodes, and links...then runs forceLayout
+    captionDefault();
 }
 
 
@@ -154,8 +154,38 @@ function radiusCircle(area) {
     return Math.sqrt(area / Math.PI);
 }
 
+function newElement(tag, classList, id) {
 
+    const element = document.createElement(tag);
 
+    if (classList) {
+        element.setAttribute("class", classList);
+    }
+
+    if (id) {
+        element.setAttribute("id", id);
+    }
+
+    return element;
+}
+
+function commaNumber(num) { // add commas to large numbers
+    num = num.toString();
+    const digits = num.length;
+    let commasAdded = 0;
+
+    for (let i = 0; i < digits; i++) {
+        if (i % 3 == 0 && i !== 0) {
+            const numA = num.substring(0, digits - i);
+            const numB = num.substring(digits - i, digits + commasAdded);
+
+            num = numA + "," + numB;
+            commasAdded++;
+        }
+    }
+
+    return num;
+}
 
 
 
@@ -175,7 +205,7 @@ function getAPI_URL(dataSrcURL, sheetName) // google sheet URL, sheet name
     return apiBaseDomain + "/" + fileID + "/" + sheetName;
 }
 
-function populatemasterData(data) { // places and sorts fetched content into masterData
+function populateMasterData(data) { // places and sorts fetched content into masterData
 
     for (let i = 0; i < data.length; i++) { // for each data object
 
@@ -191,6 +221,10 @@ function populatemasterData(data) { // places and sorts fetched content into mas
 
         // convert numbers (congregations) to float
         data[i][dimensions.num] = parseFloat(data[i][dimensions.num]);
+
+        // count total congregations
+        if (!dataInfo[dimensions.num]) {dataInfo[dimensions.num] = 0;}
+        dataInfo[dimensions.num] += data[i][dimensions.num];
 
         // designate as affiliate node
         data[i]["type"] = "affiliate";
@@ -503,6 +537,12 @@ function defineViz() {
         })
         ;
 
+    // start force layout
+
+    forceLayout
+        .nodes(vizNodes).on("tick", ticked);
+    forceLayout.force("link")
+        .links(vizLinks);
 }
 
 function ticked() {
@@ -576,38 +616,35 @@ function captionDefault() { // create and populate default caption
 
     // caption A
 
-    const affCountNum = document.createElement("div"); // number of nodes (affiliates) in xl text
-    affCountNum.setAttribute("class", "caption-heading xl");
-    affCountNum.innerText = masterData,length;
+    const affCountNum = newElement("div", "caption-heading xl small-caps"); // number of nodes (affiliates) in xl text
+    affCountNum.innerText = masterData.length;
 
-    const affCountNumText = document.createElement("div"); // the text "denomination affiliates" next to digits
-    affCountNumText.setAttribute("class", "caption-text bold");
-    affCountNumText.innerHTML = "denomination<br>affiliates";
+    const affCountText = newElement("div", "caption-text bold"); // the text "denomination affiliates" next to digits
+    affCountText.innerHTML = "denomination<br>affiliates";
 
-    captionA.append(affCountNum);
-    captionA.append(affCountText);
+    const captionFlex = newElement("div", "caption-flex"); // container for flex layout
+    captionFlex.append(affCountNum);
+    captionFlex.append(affCountText);
+
+    captionA.append(captionFlex); // add to existing container
 
     // caption B
 
-    const catCountNum = document.createElement("span"); // bold digits for category (faith traditions) count
-    catCountNum.setAttribute("class", "caption-text bold");
+    const catCountNum = newElement("span", "caption-text bold"); // bold digits for category (faith traditions) count
     catCountNum.innerText = categories.length; // NEED TO SUBTRACT "Other" category
 
-    const catCountText = document.createElement("div"); // category (faith traditions) count and text
-    catCountText.setAttribute("class", "caption-text");
+    const catCountText = newElement("div", "caption-text"); // category (faith traditions) count and text
     catCountText.append(catCountNum);
     catCountText.innerHTML += " faith traditions";
 
-    const congCountNum = document.createElement("span"); // bold digits for congregation count
-    congCountNum.setAttribute("class", "caption-text bold");
-    congCountNum.innerText = ""; // CALCULATE # of congregations
+    const congCountNum = newElement("span", "caption-text bold"); // bold digits for congregation count
+    congCountNum.innerText = commaNumber(dataInfo[dimensions.num]); // CALCULATE # of congregations
     
-    const congCountText = document.createElement("div"); // congregation count and text
+    const congCountText = newElement("div", "caption-text"); // congregation count and text
     congCountText.append(congCountNum);
-    congCountText.setAttribute("class", "caption-text");
     congCountText.innerHTML += " total congregations";
 
-    captionB.append(catCountText);
+    captionB.append(catCountText); // add to existing container
     captionB.append(congCountText);
 }
 
