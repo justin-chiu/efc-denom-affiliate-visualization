@@ -39,7 +39,7 @@ dimensions = { // which columns of spreadsheet to use for viz
     name: "Name (Display)" // display name
 }
 
-dataInfo = new Object();
+dataInfo = new Object(); // stores properties relating to entire masterData array
 
 /* masterData obj custom properties
     {
@@ -58,12 +58,24 @@ dataInfo = new Object();
 function fetchStartViz(apiURL) { // fetch JSON via URL
     fetch(apiURL)
         .then(response => response.json())
-        .then(response => runViz(response));
+        .then(response => runViz(console.log(response)));
+}
+
+function startViz(path) { // takes relative path to CSV file, reads and returns data as array of data objects
+
+    let data = new Array();
+
+    d3.csv("../denom-affiliate-data.csv", function(d) {
+        data.push(d);
+    });
+
+    console.log(data);
+    runViz(data);
 }
 
 function runViz(data) { // sets property values for masterData
 
-    masterData = populateMasterData(data);
+    masterData = formatData(data);
     vizNodes = populateNodes(masterData);
     vizLinks = populateLinks(masterData);
 
@@ -206,7 +218,7 @@ function getAPI_URL(dataSrcURL, sheetName) // google sheet URL, sheet name
     return apiBaseDomain + "/" + fileID + "/" + sheetName;
 }
 
-function populateMasterData(data) { // places and sorts fetched content into masterData
+function formatData(data) { // sorts and formats data objects, returns sorted/formatted array
 
     for (let i = 0; i < data.length; i++) { // for each data object
 
@@ -771,11 +783,17 @@ function toggleFullScreen() {
 
 window.onload = function () {
 
-    fetchStartViz(
-        getAPI_URL(
+    // using JSON fetch API (online only)
+    fetchStartViz (
+        getAPI_URL (
             dataSrc.url,
             dataSrc.sheetName
-        ));
+        )
+    );
+
+    // using d3.csv (offline)
+    // startViz();
+
 }
 
 window.onresize = function () {
