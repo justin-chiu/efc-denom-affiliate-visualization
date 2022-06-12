@@ -17,6 +17,12 @@ let forceLayout,
     svgHeight,
     chartLabel;
 
+// Other variables
+
+let fullScreen,
+    catCaption,
+    affCaption;
+
 // DOM elements
 const viz = document.querySelector("#denom-affiliate-viz");
 const chartSVG = viz.querySelector("#viz-chart-svg");
@@ -30,6 +36,7 @@ const svgD3 = d3.select("#viz-chart-svg");
 
 dataSrc = { // Data sources
     url: "https://docs.google.com/spreadsheets/d/1uO3PUyP6WnctX-DMGOTsI3jMxcMgy297lz-TjiVYL3s/edit#gid=0",
+    csv: "../denom-affiliate-data.csv",
     sheetName: "Combined"
 }
 
@@ -53,32 +60,29 @@ dataInfo = new Object(); // stores properties relating to entire masterData arra
 
 
 
+
 // ------MAIN FUNCTIONS------
 
-function fetchStartViz(apiURL) { // fetch JSON via URL
-    fetch(apiURL)
-        .then(response => response.json())
-        .then(response => runViz(console.log(response)));
-}
+function startViz(offlineURL, onlineURL, online = false) { // takes relative path to CSV file, reads and returns data as array of data objects
 
-function startViz(path) { // takes relative path to CSV file, reads and returns data as array of data objects
-
-    let data = new Array();
-
-    d3.csv("../denom-affiliate-data.csv", function(d) {
-        data.push(d);
-    });
-
-    console.log(data);
-    runViz(data);
+    if (online) {
+        fetch(onlineURL)
+            .then(response => response.json())
+            .then(response => runViz(response));
+    } else { // offline
+        d3.csv(offlineURL)
+            .then(function (d) { runViz(d); });
+    }
 }
 
 function runViz(data) { // sets property values for masterData
 
+    // data back-end
     masterData = formatData(data);
     vizNodes = populateNodes(masterData);
     vizLinks = populateLinks(masterData);
 
+    // running front-end
     setSVGDimensions(chartSVG);
     defineViz(); // defines viz forceLayout, nodes, and links...then runs forceLayout
     captionDefault();
@@ -236,7 +240,7 @@ function formatData(data) { // sorts and formats data objects, returns sorted/fo
         data[i][dimensions.num] = parseFloat(data[i][dimensions.num]);
 
         // count total congregations
-        if (!dataInfo[dimensions.num]) {dataInfo[dimensions.num] = 0;}
+        if (!dataInfo[dimensions.num]) { dataInfo[dimensions.num] = 0; }
         dataInfo[dimensions.num] += data[i][dimensions.num];
 
         // designate as affiliate node
@@ -307,7 +311,7 @@ function makeCategories(data) { // create category objects for nodes
 
             } else { // if category not in set
 
-                let catObj = {name: newCat[k], count: 1}
+                let catObj = { name: newCat[k], count: 1 }
                 catObj[dimensions.num] = data[j][dimensions.num];
 
                 categories.push(catObj); // create a category object
@@ -393,6 +397,7 @@ function populateLinks(data, dimension = dimensions.cat) {
 
 
 
+
 // ------FRONT-END------
 
 function setSVGDimensions(svg) // svg == element for which we are setting the width and height attributes
@@ -426,16 +431,16 @@ function defineViz() {
                 return d.radius;
             })
         )
-        .force("y", d3.forceY(function(d) { // nodes attracted to y-value
+        .force("y", d3.forceY(function (d) { // nodes attracted to y-value
             switch (d.type) {
                 case "origin": return svgHeight * 0.9;
-                case "category": 
+                case "category":
                     switch (d.segment) { // different y-value for categories depending on segment
                         case 0: return svgHeight * 0.3;
                         case 1: return svgHeight * 0.3;
                         case 2: return svgHeight * 0.1;
                     }
-                case "affiliate": 
+                case "affiliate":
                     if (d[dimensions.cat].length < 2) {
                         let thisCat = categories.find(element => element.name == d[dimensions.cat][0]);
                         switch (thisCat.segment) { // different y-value for affiliates depending on category
@@ -447,7 +452,7 @@ function defineViz() {
                         return svgWidth * 0.2;
                     }
             }
-        }).strength(function(d) { // different force strength depending on type
+        }).strength(function (d) { // different force strength depending on type
             switch (d.type) {
                 case "origin": return 2;
                 case "category": return 0.1;
@@ -511,11 +516,22 @@ function defineViz() {
         })
         .attr("id", function (d) {
             return d.id; // add node ID as id attribute
-        });
+        })
+        // events
+        .on("click", function (d) {
+            focusNode(d, true);
+        })
+        .on("mouseenter", function (d) {
+            focusNode(d, false);
+        })
+        .on("mouseout", function (d) {
+            focusNothing();
+        })
+        ;
 
     svgNode.append("circle") // add a second circle
         .attr("class", "size") // circle type: size
-        .attr("r", function(d) { // area of circle depends on dimensions.num (Congregataions)
+        .attr("r", function (d) { // area of circle depends on dimensions.num (Congregataions)
             if (d.type == "affiliate") {
                 return radiusCircle(d[dimensions.num]) * 2.5 + pointRadius;
             }
@@ -523,7 +539,7 @@ function defineViz() {
 
     svgNode.append("circle") // every node has the same point circle in the middle
         .attr("class", "point") // circle type: point
-        .attr("r", function(d) {
+        .attr("r", function (d) {
             if (d.type == "affiliate") {
                 return pointRadius;
             } else {
@@ -534,7 +550,7 @@ function defineViz() {
     chartLabel = labelsD3.selectAll(".chart-label")
         .data(vizNodes)
         .enter().append("div")
-        .attr("class", function(d) {
+        .attr("class", function (d) {
             let classString = "chart-label";
 
             if (d.type == "category") {
@@ -543,7 +559,7 @@ function defineViz() {
 
             return classString;
         })
-        .text(function(d) {
+        .text(function (d) {
             if (d.type == "category") {
                 return d[dimensions.cat][0];
             }
@@ -592,8 +608,8 @@ function ticked() {
         });
 
     chartLabel
-        .attr("style", function(d) {
-            
+        .attr("style", function (d) {
+
             let styleString = "";
 
             const xVal = (d.x - (svgWidth / 2)) * xStretch + xOffset;
@@ -609,12 +625,13 @@ function ticked() {
 
 
 
+
 // ------INTERACTIONS------
 
 // whether elements have been created
-let fullScreen = false;
-let catCaption = false; // category caption created?
-let affCaption = false; // affiliate caption created?
+fullScreen = false;
+catCaption = false; // category caption created?
+affCaption = false; // affiliate caption created?
 
 function captionDelete() { // delete all caption elements except containers
     captionA.innerHTML = "";
@@ -624,7 +641,7 @@ function captionDelete() { // delete all caption elements except containers
 }
 
 function captionDefault() { // create and populate default caption
-    
+
     captionDelete();
 
     // caption A
@@ -652,7 +669,7 @@ function captionDefault() { // create and populate default caption
 
     const congCountNum = newElement("span", "caption-text bold"); // bold digits for congregation count
     congCountNum.innerText = commaNumber(dataInfo[dimensions.num]); // CALCULATE # of congregations
-    
+
     const congCountText = newElement("div", "caption-text"); // congregation count and text
     congCountText.append(congCountNum);
     congCountText.innerHTML += " total congregations";
@@ -661,9 +678,13 @@ function captionDefault() { // create and populate default caption
     captionB.append(congCountText);
 }
 
-function captionCategory(catObj) { // takes category object, creates and populates category caption
-    
+function captionCategory(dataObj) { // takes category object, creates and populates category caption
+
     captionDelete();
+
+    // get catObj
+
+    const catObj = categories.find(element => element.name == dataObj.id.replace("cat-", ""));
 
     // caption A
 
@@ -703,7 +724,7 @@ function captionCategory(catObj) { // takes category object, creates and populat
 function captionAffiliate(dataObj) { // takes affiliate data object, creates and populates affiliate caption
 
     captionDelete();
-    
+
     // caption A
 
     const affHeading = newElement("div", "caption-heading md");
@@ -724,11 +745,10 @@ function captionAffiliate(dataObj) { // takes affiliate data object, creates and
     affCongText.innerHTML += " congregations";
 
     captionB.append(affSubHead);
-    // captionB.append (
-    //     captionAffCats(dataObj[dimensions.cat])
-    // );
-
-
+    captionB.append(
+        captionAffCats(dataObj[dimensions.cat])
+    );
+    captionB.append(affCongText);
 }
 
 function captionAffCats(affCats) { // takes dataObj dimensions.cat property
@@ -744,7 +764,7 @@ function captionAffCats(affCats) { // takes dataObj dimensions.cat property
 
         const catName = newElement("div", "caption-text");
         catName.innerText = thisCat.name;
-        
+
         const catRef = newElement("div", "caption-flex");
         catRef.append(catSquare);
         catRef.append(catName);
@@ -755,15 +775,26 @@ function captionAffCats(affCats) { // takes dataObj dimensions.cat property
     return catContainer;
 }
 
+function focusNode(event, sticky = false) { // sticky argument determines whether caption stays after mouseout
+    
+    const dataObj = event.target.__data__;
+    console.log(event);
+
+    switch (dataObj.type) {
+        case "category":
+            captionCategory(dataObj);
+            break;
+        case "affiliate":
+            captionAffiliate(dataObj);
+            break;
+        case "origin":
+            captionDefault();
+            break;
+    }
+
+}
+
 function focusNothing() {
-
-}
-
-function focusCategory() {
-
-}
-
-function focusAffiliate() {
 
 }
 
@@ -783,17 +814,11 @@ function toggleFullScreen() {
 
 window.onload = function () {
 
-    // using JSON fetch API (online only)
-    fetchStartViz (
-        getAPI_URL (
-            dataSrc.url,
-            dataSrc.sheetName
-        )
+    startViz(
+        dataSrc.csv, // offline data source
+        getAPI_URL(dataSrc.url, dataSrc.sheetName), // online data source
+        false // run the viz based on an offline data source
     );
-
-    // using d3.csv (offline)
-    // startViz();
-
 }
 
 window.onresize = function () {

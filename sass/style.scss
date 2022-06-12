@@ -177,11 +177,16 @@ body {margin: 0;} // remove this for embed
 
     .color-square {
 
-        padding-top: 100%;
         background-color: darkgrey;
 
-        &.text-size {}
-        &.heading-size {width: 4rem;}
+        &.text-size {
+            width: 2.25rem;
+            height: 2.25rem;
+        }
+        &.heading-size {
+            width: 4rem;
+            height: 4rem;
+        }
     }
 
     
@@ -207,6 +212,7 @@ body {margin: 0;} // remove this for embed
         top: 0;
         left: 0;
         z-index: 100;
+        pointer-events: none;
     }
 
     .chart-link
