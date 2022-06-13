@@ -204,6 +204,25 @@ function commaNumber(num) { // add commas to large numbers
     return num;
 }
 
+function charCountSize(str) { // return different values depending on str length
+    if (str.length > 52) {return "sm";}
+    else if (str.split("<br>").length > 2) {return "sm";}
+    else {return "md";}
+}
+
+function slashBreaks(str) { // replaces "/" with "/<br>"
+    
+    for (let i = 0; i < str.split("/").length - 1; i++) {
+        str = str.replace("/", "/<br>");
+    }
+
+    return str;
+}
+
+
+
+
+
 
 
 // ------DATA/BACK-END------
@@ -518,14 +537,8 @@ function defineViz() {
             return d.id; // add node ID as id attribute
         })
         // events
-        .on("click", function (d) {
-            focusNode(d, true);
-        })
         .on("mouseenter", function (d) {
             focusNode(d, false);
-        })
-        .on("mouseout", function (d) {
-            focusNothing();
         })
         ;
 
@@ -563,6 +576,9 @@ function defineViz() {
             if (d.type == "category") {
                 return d[dimensions.cat][0];
             }
+        })
+        .on("mouseenter", function (d) {
+            focusNode(d, false);
         })
         ;
 
@@ -649,8 +665,8 @@ function captionDefault() { // create and populate default caption
     const affCountNum = newElement("div", "caption-heading xl small-caps"); // number of nodes (affiliates) in xl text
     affCountNum.innerText = masterData.length;
 
-    const affCountText = newElement("div", "caption-text bold"); // the text "denomination affiliates" next to digits
-    affCountText.innerHTML = "denomination<br>affiliates";
+    const affCountText = newElement("div", "caption-text"); // the text "denomination affiliates" next to digits
+    affCountText.innerHTML = "Denomination<br>Affiliates";
 
     const captionFlex = newElement("div", "caption-flex"); // container for flex layout
     captionFlex.append(affCountNum);
@@ -665,14 +681,14 @@ function captionDefault() { // create and populate default caption
 
     const catCountText = newElement("div", "caption-text"); // category (faith traditions) count and text
     catCountText.append(catCountNum);
-    catCountText.innerHTML += " faith traditions";
+    catCountText.innerHTML += "&nbsp;Faith&nbsp;Traditions";
 
     const congCountNum = newElement("span", "caption-text bold"); // bold digits for congregation count
     congCountNum.innerText = commaNumber(dataInfo[dimensions.num]); // CALCULATE # of congregations
 
     const congCountText = newElement("div", "caption-text"); // congregation count and text
     congCountText.append(congCountNum);
-    congCountText.innerHTML += " total congregations";
+    congCountText.innerHTML += "&nbsp;Total&nbsp;Congregations";
 
     captionB.append(catCountText); // add to existing container
     captionB.append(congCountText);
@@ -691,32 +707,35 @@ function captionCategory(dataObj) { // takes category object, creates and popula
     const catSquare = newElement("div", "color-square heading-size"); // color square for category
     // catSquare.style.backgroundColor = catObj.color;
 
-    const catHeading = newElement("div", "caption-heading lg"); // category name in heading
-    catHeading.innerText = catObj.name;
+    const catName = newElement("div", "caption-heading lg"); // category name in heading
+    catName.innerHTML = slashBreaks(catObj.name); // adds line break for names with "/"
 
-    captionA.append(catSquare);
+    const catHeading = newElement("div", "caption-flex");
+
+    catHeading.append(catSquare);
+    catHeading.append(catName);
     captionA.append(catHeading);
 
     // caption B
 
     const catSubHead = newElement("div", "caption-subhead-caps");
-    catSubHead.innerText = "Faith Tradition";
+    catSubHead.innerHTML = "Faith Tradition";
 
     // how many affiliates in category
     const catAffNum = newElement("span", "caption-text bold");
     catAffNum.innerText = catObj.count;
     const catAffText = newElement("div", "caption-text");
     catAffText.append(catAffNum);
-    catAffText.innerHTML += " affiliates";
+    catAffText.innerHTML += "&nbsp;Affiliates";
 
     // how many congregations in category
     const catCongNum = newElement("span", "caption-text bold");
     catCongNum.innerText = catObj[dimensions.num];
     const catCongText = newElement("div", "caption-text");
     catCongText.append(catCongNum);
-    catCongText.innerHTML += " total congregations";
+    catCongText.innerHTML += "&nbsp;Total&nbsp;Congregations";
 
-    captionB.append(catSubHead);
+    // captionB.append(catSubHead);
     captionB.append(catAffText);
     captionB.append(catCongText);
 }
@@ -727,24 +746,26 @@ function captionAffiliate(dataObj) { // takes affiliate data object, creates and
 
     // caption A
 
-    const affHeading = newElement("div", "caption-heading md");
-    affHeading.innerText = dataObj[dimensions.name];
+    const affHeading = newElement ( 
+        "div", "caption-heading " + charCountSize(dataObj[dimensions.name])
+    ); // class and size of heading determined by number of characters
+    affHeading.innerHTML = dataObj[dimensions.name];
 
     captionA.append(affHeading);
 
     // caption B
 
     const affSubHead = newElement("div", "caption-subhead-caps");
-    affSubHead.innerText = "Affiliate";
+    affSubHead.innerHTML = "Affiliate";
 
     const affCongNum = newElement("span", "caption-text bold");
     affCongNum.innerText = dataObj[dimensions.num];
 
     const affCongText = newElement("div", "caption-text");
     affCongText.append(affCongNum);
-    affCongText.innerHTML += " congregations";
+    affCongText.innerHTML += "&nbsp;Congregations";
 
-    captionB.append(affSubHead);
+    // captionB.append(affSubHead);
     captionB.append(
         captionAffCats(dataObj[dimensions.cat])
     );
@@ -753,7 +774,7 @@ function captionAffiliate(dataObj) { // takes affiliate data object, creates and
 
 function captionAffCats(affCats) { // takes dataObj dimensions.cat property
 
-    const catContainer = newElement("div"); // container for all category references
+    const catContainer = newElement("div", "caption-group"); // container for all category references
 
     for (let i = 0; i < affCats.length; i++) { // for each of dataObj's categories
 
@@ -765,7 +786,7 @@ function captionAffCats(affCats) { // takes dataObj dimensions.cat property
         const catName = newElement("div", "caption-text");
         catName.innerText = thisCat.name;
 
-        const catRef = newElement("div", "caption-flex");
+        const catRef = newElement("div", "caption-flex cat-ref");
         catRef.append(catSquare);
         catRef.append(catName);
 
@@ -778,7 +799,6 @@ function captionAffCats(affCats) { // takes dataObj dimensions.cat property
 function focusNode(event, sticky = false) { // sticky argument determines whether caption stays after mouseout
     
     const dataObj = event.target.__data__;
-    console.log(event);
 
     switch (dataObj.type) {
         case "category":
