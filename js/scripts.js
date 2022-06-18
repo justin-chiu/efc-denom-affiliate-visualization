@@ -28,6 +28,8 @@ const viz = document.querySelector("#denom-affiliate-viz");
 const chartSVG = viz.querySelector("#viz-chart-svg");
 const captionA = viz.querySelector("#caption-a");
 const captionB = viz.querySelector("#caption-b");
+const fileLoader = viz.querySelector("#file-loader");
+const fileUpload = viz.querySelector("#file-upload");
 
 // D3 elements
 const labelsD3 = d3.select("#viz-chart-labels");
@@ -36,7 +38,7 @@ const svgD3 = d3.select("#viz-chart-svg");
 
 dataSrc = { // Data sources
     url: "https://docs.google.com/spreadsheets/d/1uO3PUyP6WnctX-DMGOTsI3jMxcMgy297lz-TjiVYL3s/edit#gid=0",
-    csv: "../denom-affiliate-data.csv",
+    csv: "../data.csv",
     sheetName: "Combined"
 }
 
@@ -61,21 +63,39 @@ dataInfo = new Object(); // stores properties relating to entire masterData arra
 
 
 
-// ------MAIN FUNCTIONS------
+// ------STARTING THE VIZ------
 
-function startViz(offlineURL, onlineURL, online = false) { // takes relative path to CSV file, reads and returns data as array of data objects
+function startFromServer(offlineURL, onlineURL, online = false) { // takes relative path to CSV file, reads and returns data as array of data objects
 
     if (online) {
         fetch(onlineURL)
             .then(response => response.json())
             .then(response => runViz(response));
-    } else { // offline
+    } else { // offline but with live server
         d3.csv(offlineURL)
             .then(function (d) { runViz(d); });
     }
 }
 
-function runViz(data) { // sets property values for masterData
+function startFromUpload(input) {
+
+    let file = input.files[0];
+    let fileReader = new FileReader();
+
+    fileReader.readAsText(file);
+
+    fileReader.onload = function () {
+        let data = d3.csvParse(fileReader.result);
+        runViz(data);
+    }
+
+}
+
+// the main function that runs the whole visualization
+function runViz(data) {
+
+    // close data upload dialog
+    fileLoader.classList.add("loader-hide");
 
     // data back-end
     masterData = formatData(data);
@@ -641,7 +661,6 @@ function ticked() {
 
 
 
-
 // ------INTERACTIONS------
 
 // whether elements have been created
@@ -834,11 +853,19 @@ function toggleFullScreen() {
 
 window.onload = function () {
 
-    startViz(
-        dataSrc.csv, // offline data source
-        getAPI_URL(dataSrc.url, dataSrc.sheetName), // online data source
-        false // run the viz based on an offline data source
-    );
+    // start viz automatically only if page is running from server
+    if (window.location.protocol !== 'file:') {
+        startFromServer (
+            dataSrc.csv, // offline data source
+            getAPI_URL(dataSrc.url, dataSrc.sheetName), // online data source
+            false // false --> run the viz based on an offline data source
+        );
+    } else { // start viz on file upload if page is running locally
+        fileLoader.classList.remove("loader-hide"); // show file uploader
+        fileUpload.onchange = function() { // when user uploads data file
+            startFromUpload(this);
+        }
+    }
 }
 
 window.onresize = function () {

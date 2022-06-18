@@ -43,6 +43,7 @@ body {margin: 0;} // remove this for embed
 
 #denom-affiliate-viz
 {
+    position: relative;
     font-size: 16px;
     font-family: Arial, Helvetica, sans-serif;
     position: relative;
@@ -50,6 +51,38 @@ body {margin: 0;} // remove this for embed
     // padding-top: 56.25%;
     width: 1920px;
     height: 1080px;
+
+    #file-loader {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: $bg-colour;
+        z-index: 200;
+
+        &.loader-hide {display: none;}
+    }
+
+    #file-loader-dialog {
+        padding: 4.5rem 3.5rem 4rem 3.5rem;
+        background-color: darkslategray;
+        color: white;
+    }
+
+    .dialog-block {
+        &.header {margin-bottom: 0.9rem;}
+        &.subhead {margin-bottom: 2.25rem;}
+        &.upload {
+            display: flex;
+            flex-direction: column;
+            row-gap: 0.6rem;
+            align-items: flex-start;
+        }
+    }
 
     #viz-wrapper
     {
@@ -108,10 +141,6 @@ body {margin: 0;} // remove this for embed
         padding-top: 1.25rem;
         padding-bottom: 1.25rem;
         padding-right: 2.2rem;
-
-        font-family: 'Raleway', sans-serif;
-        font-size: 1rem;
-        font-weight: 700;
     }
 
 
@@ -305,10 +334,17 @@ body {margin: 0;} // remove this for embed
         font-family: Alice, serif;
         margin: 0;
         font-weight: normal;
+        line-height: 1.05;
     }
     
     p {
         margin: 0;
+
+        &.subtitle {
+            font-family: 'Raleway', sans-serif;
+            font-size: 1rem;
+            font-weight: 700;
+        }
     }
 
 }
