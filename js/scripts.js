@@ -22,7 +22,9 @@ let forceLayout,
 
 let fullScreen,
     catCaption,
-    affCaption;
+    affCaption,
+    nodeSelected,
+    activeNode;
 
 // DOM elements
 const viz = document.querySelector("#denom-affiliate-viz");
@@ -208,7 +210,7 @@ function orderArrayRandom(array) { // randomize order of array items
     return array;
 }
 
-function radiusCircle(area, add = 0, multiplier = 2.5) {
+function radiusCircle(area, add = 0, multiplier = 2.75) {
     // add == amount to add to radius after it is calculated
     // multiplier == multiply radius proportionally
 
@@ -249,13 +251,13 @@ function commaNumber(num) { // add commas to large numbers
 }
 
 function charCountSize(str) { // return different values depending on str length
-    if (str.length > 52) {return "sm";}
-    else if (str.split("<br>").length > 2) {return "sm";}
-    else {return "md";}
+    if (str.length > 52) { return "sm"; }
+    else if (str.split("<br>").length > 2) { return "sm"; }
+    else { return "md"; }
 }
 
 function slashBreaks(str) { // replaces "/" with "/<br>"
-    
+
     for (let i = 0; i < str.split("/").length - 1; i++) {
         str = str.replace("/", "/<br>");
     }
@@ -267,7 +269,7 @@ function getColor(dataObj) {
     if (dataObj.type !== "origin") {
         for (let i = 0; i < dataObj[dimensions.cat].length; i++) {
             if (catColors[dataObj[dimensions.cat][i]]) { // first color that exists
-                    return catColors[dataObj[dimensions.cat][i]];
+                return catColors[dataObj[dimensions.cat][i]];
             }
         }
     } else {
@@ -499,7 +501,7 @@ function defineViz() {
             .strength(1 / 3)
         )
         .force("charge", d3.forceManyBody() // nodes repel each other
-            .strength(function(d) {
+            .strength(function (d) {
                 switch (d.type) {
                     case "origin": return -600;
                     case "category": return -400;
@@ -574,9 +576,9 @@ function defineViz() {
         });
 
     // drawing nodes
-    const originSize = 12; // radius of origin node
-    const catSize = 6; // size of cat node
-    const affSize = 5.5; // minimum size of affiliate node
+    const originSize = 8; // radius of origin node
+    const catSize = 4; // size of cat node
+    const affSize = 0; // minimum size of affiliate node
 
     svgNode = svgD3.append("g").classed("group-nodes", true) // put all nodes in a <g>
         .selectAll("g")
@@ -605,18 +607,18 @@ function defineViz() {
             focusNode(e);
         })
         .on("click", function (e) {
-            selectNode(e);
+            clickNode(e);
         })
         ;
 
     svgNode.append("circle") // circle that indicates hover or click
         .attr("class", "focused")
         .attr("r", function (d) {
-            
-            const sizeAdded =  20; // how much bigger the select circle should be
+
+            const sizeAdded = 20; // how much bigger the select circle should be
 
             switch (d.type) {
-                case "origin": 
+                case "origin":
                     return originSize + sizeAdded;
                 case "category": return catSize + sizeAdded;
                 case "affiliate": return radiusCircle(d[dimensions.num], affSize) + sizeAdded;
@@ -634,13 +636,12 @@ function defineViz() {
         .attr("class", "size") // circle type: size
         .attr("r", function (d) { // area of circle depends on dimensions.num (Congregataions)
             switch (d.type) {
+                case "category": return catSize + 7;
                 case "affiliate": return radiusCircle(d[dimensions.num], affSize);
             }
         })
         .attr("fill", function (d) {
-            switch (d.type) {
-                case "affiliate": return getColor(d);
-            }
+            return getColor(d);
         })
         .attr("stroke", function (d) {
             return getColor(d);
@@ -686,7 +687,7 @@ function defineViz() {
             }
         })
         .on("mouseenter", function (d) {
-            focusNode(d, false);
+            focusNode(d);
         })
         ;
 
@@ -764,8 +765,9 @@ function ticked() {
 fullScreen = false;
 catCaption = false; // category caption created?
 affCaption = false; // affiliate caption created?
+nodeSelected = false; // whether node has been pinned
+activeNode = "";
 
-nodeSelected = false;
 
 function captionDelete() { // delete all caption elements except containers
     captionA.innerHTML = "";
@@ -881,7 +883,7 @@ function captionAffiliate(dataObj) { // takes affiliate data object, creates and
 
     // caption A
 
-    const affHeading = newElement ( 
+    const affHeading = newElement(
         "div", "caption-heading " + charCountSize(dataObj[dimensions.name])
     ); // class and size of heading determined by number of characters
     affHeading.innerHTML = dataObj[dimensions.name];
@@ -943,37 +945,112 @@ function captionAffCats(affCats) { // takes dataObj dimensions.cat property
     return catContainer;
 }
 
-function focusNode(event) { // sticky argument determines whether caption stays after mouseout
-
-    if (!nodeSelected) {
-        
-        const dataObj = event.target.__data__;
-
-        const allOtherFocused = viz.querySelectorAll(".focused");
-        const thisFocused = event.target.querySelector(".focused");
-    
-        for (let i = 0; i < allOtherFocused.length; i++) {
-            allOtherFocused[i].classList.remove("visible");
-        }
-    
-        thisFocused.classList.add("visible");
-
-        switch (dataObj.type) {
-            case "category":
-                captionCategory(dataObj);
-                break;
-            case "affiliate":
-                captionAffiliate(dataObj);
-                break;
-            case "origin":
-                captionDefault();
-                break;
-        }    
+function captionNode(dataObj) { // determines which caption function to run
+    switch (dataObj.type) { // caption
+        case "category":
+            captionCategory(dataObj);
+            break;
+        case "affiliate":
+            captionAffiliate(dataObj);
+            break;
+        case "origin":
+            captionDefault();
+            break;
     }
 }
 
-function focusNothing() {
+function focusNode(event) { // sticky argument determines whether caption stays after mouseout
 
+    const dataObj = event.currentTarget.__data__; // dataObj for target
+
+    if (!nodeSelected) {
+
+        const allNodes = viz.querySelectorAll(".chart-node");
+
+        for (let i = 0; i < allNodes.length; i++) {
+            allNodes[i].classList.remove("highlighted"); // un-highlight all nodes
+        }
+
+        event.currentTarget.classList.add("highlighted"); // re-highlight target node
+
+        captionNode(dataObj);
+
+        activeNode = event.currentTarget.id;
+    }
+}
+
+function clickOut(event) {
+
+    const classStr = event.target.classList.value;
+    
+    if (
+        classStr.indexOf("chart-node") == -1
+        && classStr.indexOf("chart-label") == -1
+        && event.target.tagName !== "circle"
+    ) {
+        const allNodes = viz.querySelectorAll(".chart-node");
+
+        for (let i = 0; i < allNodes.length; i++) {
+            allNodes[i].classList.remove("highlighted"); // un-highlight all nodes
+            allNodes[i].classList.remove("selected"); // un-select all nodes
+        }
+
+        captionDefault();
+
+        nodeSelected = false;
+        activeNode = "";
+    }
+}
+
+function clickNode(event) {
+
+    const dataObj = event.currentTarget.__data__;
+
+    if (nodeSelected) {
+
+        if (activeNode == event.currentTarget.id) { // if clicking node to de-select
+
+            event.currentTarget.classList.remove("selected");
+            event.currentTarget.classList.remove("highlighted");
+            captionDefault();
+
+            nodeSelected = false;
+            activeNode = "";
+
+        } else {  // if clicking another node other than the one already selected
+
+            const allNodes = viz.querySelectorAll(".chart-node");
+
+            for (let i = 0; i < allNodes.length; i++) {
+                allNodes[i].classList.remove("highlighted");
+                allNodes[i].classList.remove("selected");
+            }
+
+            event.currentTarget.classList.add("highlighted");
+            event.currentTarget.classList.add("selected");
+
+            captionNode(dataObj);
+
+            activeNode = event.currentTarget.id;
+        }
+
+    } else {
+
+        if (activeNode == event.currentTarget.id) { // if clicking to select node for the first time
+            event.currentTarget.classList.add("selected");
+
+            nodeSelected = true;
+
+        } else { // if clicking to select immediately after de-selecting the same node
+            event.currentTarget.classList.add("highlighted");
+            event.currentTarget.classList.add("selected");
+
+            captionNode(dataObj);
+
+            nodeSelected = true;
+            activeNode = event.currentTarget.id;
+        }
+    }
 }
 
 function resetViz() {
@@ -994,14 +1071,14 @@ window.onload = function () {
 
     // start viz automatically only if page is running from server
     if (window.location.protocol !== 'file:') {
-        startFromServer (
+        startFromServer(
             dataSrc.csv, // offline data source
             getAPI_URL(dataSrc.url, dataSrc.sheetName), // online data source
             false // false --> run the viz based on an offline data source
         );
     } else { // start viz on file upload if page is running
         fileLoader.classList.remove("loader-hide"); // show file uploader
-        fileUpload.onchange = function() { // when user uploads data file
+        fileUpload.onchange = function () { // when user uploads data file
             startFromUpload(this);
         }
     }
@@ -1010,3 +1087,5 @@ window.onload = function () {
 window.onresize = function () {
     setSVGDimensions(chartSVG);
 }
+
+viz.onclick = clickOut;
