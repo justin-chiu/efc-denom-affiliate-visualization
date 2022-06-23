@@ -258,11 +258,30 @@ function charCountSize(str) { // return different values depending on str length
 
 function slashBreaks(str) { // replaces "/" with "/<br>"
 
+    let newStr = str;
+
     for (let i = 0; i < str.split("/").length - 1; i++) {
-        str = str.replace("/", "/<br>");
+        newStr = newStr.replace("/", "/<br>");
     }
 
-    return str;
+    return newStr;
+}
+
+function slashUnderscore(str, reverse = false) { // replaces "/" with "_"
+
+    let newStr = str;
+
+    if (reverse) {
+        for (let i = 0; i < str.split("_").length - 1; i++) {
+            newStr = newStr.replace("_", "/");
+        }
+    } else {
+        for (let i = 0; i < str.split("/").length - 1; i++) {
+            newStr = newStr.replace("/", "_");
+        }
+    }
+
+    return newStr;
 }
 
 function getColor(dataObj) {
@@ -343,7 +362,7 @@ function populateNodes(data, randomOrder = false) {
     for (let i = 0; i < categories.length; i++) { // add category (faith tradition) objects to nodes array
 
         let catNode = {
-            id: "cat-" + categories[i].name,
+            id: "cat-" + slashUnderscore(categories[i].name),
             type: "category",
             segment: categories[i].segment
         }
@@ -444,7 +463,7 @@ function populateLinks(data, dimension = dimensions.cat) {
 
         let newLink = new Object();
         newLink.source = "origin";
-        newLink.target = "cat-" + categories[i].name;
+        newLink.target = "cat-" + slashUnderscore(categories[i].name);
         newLink[dimensions.cat] = categories[i].name;
         newLink.type = "category";
 
@@ -458,7 +477,7 @@ function populateLinks(data, dimension = dimensions.cat) {
         for (let j = 0; j < data[i][dimensions.cat].length; j++) {
 
             let newLink = new Object();
-            newLink.source = "cat-" + data[i][dimensions.cat][j];
+            newLink.source = "cat-" + slashUnderscore(data[i][dimensions.cat][j]);
             newLink.target = data[i].id;
             newLink[dimensions.cat] = data[i][dimensions.cat][j];
 
@@ -569,16 +588,21 @@ function defineViz() {
             }
 
             if (d[dimensions.cat]) {
-                classString += " " + d[dimensions.cat]; // add link category as class
+                classString += " " + slashUnderscore(d[dimensions.cat]); // add link category as class
             }
 
             return classString;
         });
 
     // drawing nodes
-    const originSize = 8; // radius of origin node
-    const catSize = 4; // size of cat node
-    const affSize = 0; // minimum size of affiliate node
+
+    // sizes of "point", "size", and "focus" circles
+    const circSizes = {
+        origin: {point: 6, sizeAdd: 9},
+        cat: {point: 4, sizeAdd: 7},
+        aff: {point: 0}
+    }
+    const focusAdd = 18;
 
     svgNode = svgD3.append("g").classed("group-nodes", true) // put all nodes in a <g>
         .selectAll("g")
@@ -593,7 +617,8 @@ function defineViz() {
 
             if (d[dimensions.cat]) {
                 for (let i = 0; i < d[dimensions.cat].length; i++) {
-                    classString += " " + d[dimensions.cat][i]; // add node category as class
+                    classString += " " + slashUnderscore(d[dimensions.cat][i]); // add node category as class
+                    // replace "/" with "-" for class names
                 }
             }
 
@@ -615,13 +640,13 @@ function defineViz() {
         .attr("class", "focused")
         .attr("r", function (d) {
 
-            const sizeAdded = 20; // how much bigger the select circle should be
-
             switch (d.type) {
                 case "origin":
-                    return originSize + sizeAdded;
-                case "category": return catSize + sizeAdded;
-                case "affiliate": return radiusCircle(d[dimensions.num], affSize) + sizeAdded;
+                    return circSizes.origin.point + circSizes.origin.sizeAdd + focusAdd;
+                case "category": 
+                    return circSizes.cat.point + circSizes.cat.sizeAdd + focusAdd;
+                case "affiliate": 
+                    return radiusCircle(d[dimensions.num], circSizes.aff.point) + focusAdd;
             }
         })
         .attr("fill", function (d) {
@@ -636,8 +661,9 @@ function defineViz() {
         .attr("class", "size") // circle type: size
         .attr("r", function (d) { // area of circle depends on dimensions.num (Congregataions)
             switch (d.type) {
-                case "category": return catSize + 7;
-                case "affiliate": return radiusCircle(d[dimensions.num], affSize);
+                case "origin": return circSizes.origin.point + circSizes.origin.sizeAdd;
+                case "category": return circSizes.cat.point + circSizes.cat.sizeAdd;
+                case "affiliate": return circSizes.aff.point + radiusCircle(d[dimensions.num], circSizes.aff.point);
             }
         })
         .attr("fill", function (d) {
@@ -652,9 +678,9 @@ function defineViz() {
         .attr("class", "point") // circle type: point
         .attr("r", function (d) {
             switch (d.type) {
-                case "origin": return originSize;
-                case "category": return catSize;
-                case "affiliate": return affSize;
+                case "origin": return circSizes.origin.point;
+                case "category": return circSizes.cat.point;
+                case "affiliate": return circSizes.aff.point;
             }
         })
         .attr("fill", function (d) {
@@ -672,6 +698,10 @@ function defineViz() {
             let classString = "chart-label";
 
             classString += " " + d.type;
+
+            if (d.type == "category") {
+                classString += " " + slashUnderscore(d[dimensions.cat][0]);
+            }
 
             return classString;
         })
@@ -824,7 +854,7 @@ function captionDefault() { // create and populate default caption
     captionB.append(catCountGroup);
     captionB.append(congCountHead);
     captionB.append(congCountText);
-}
+};
 
 function captionCategory(dataObj) { // takes category object, creates and populates category caption
 
@@ -832,7 +862,7 @@ function captionCategory(dataObj) { // takes category object, creates and popula
 
     // get catObj
 
-    const catObj = categories.find(element => element.name == dataObj.id.replace("cat-", ""));
+    const catObj = categories.find(element => element.name == slashUnderscore(dataObj.id.replace("cat-", ""), true));
 
     // caption A
 
@@ -965,18 +995,90 @@ function focusNode(event) { // sticky argument determines whether caption stays 
 
     if (!nodeSelected) {
 
-        const allNodes = viz.querySelectorAll(".chart-node");
-
-        for (let i = 0; i < allNodes.length; i++) {
-            allNodes[i].classList.remove("highlighted"); // un-highlight all nodes
-        }
+        focusNothing();
 
         event.currentTarget.classList.add("highlighted"); // re-highlight target node
+        if (dataObj.type == "category") {focusCatAffiliates(dataObj);
+}
 
         captionNode(dataObj);
 
         activeNode = event.currentTarget.id;
     }
+}
+
+function focusCatAffiliates(dataObj) {
+
+    const catName = "." + slashUnderscore(dataObj[dimensions.cat][0]);
+    const catAffs = chartSVG.querySelectorAll(catName); // all affiliates with category class
+
+    for (let i = 0; i < catAffs.length; i++) {
+        catAffs[i].classList.add("highlighted");
+    }
+}
+
+function focusNothing() {
+
+    const allNodes = viz.querySelectorAll(".chart-node");
+
+    for (let i = 0; i < allNodes.length; i++) {
+        allNodes[i].classList.remove("highlighted"); // un-highlight all nodes
+        allNodes[i].classList.remove("selected"); // un-select all nodes
+    }    
+}
+
+function fadeThese(elements, fade = true) { // takes an array of elements and fades or unfades them
+
+    for (let i = 0; i < elements.length; i++) {
+        if (fade) {elements[i].classList.add("faded");}
+        else {elements[i].classList.remove("faded");}
+    }
+
+}
+
+function fadeOtherNodes(event) {
+
+    const dataObj = event.currentTarget.__data__;
+
+    if (dataObj.type == "category") {
+
+        const catClass = "." + slashUnderscore(dataObj[dimensions.cat][0]);
+
+        const fadeNodes = chartSVG.querySelectorAll(".chart-node:not(" + catClass + "):not(.origin)");
+        fadeThese(fadeNodes);
+
+        const fadeLabels = viz.querySelectorAll(".chart-label:not(" + catClass + "):not(.origin)");
+        fadeThese(fadeLabels);
+
+        const fadeLines = chartSVG.querySelectorAll(".chart-link:not(" + catClass + ")");
+        fadeThese(fadeLines);
+
+    } else if (dataObj.type == "affiliate") {
+
+        const thisException = ":not(" + "#" + event.currentTarget.getAttribute("id") + ")";
+        let catExceptionIDs = new String(); // ids of cat nodes to which the affiliate belongs
+        let catExceptionClasses = new String(); // classes of cat labels to which the affiliate belongs
+
+        for (let i = 0; i < dataObj[dimensions.cat].length; i++) {
+            
+            const catID = slashUnderscore(dataObj[dimensions.cat][i]);
+
+            catExceptionClasses = catExceptionClasses + ":not(." + catID + ")";
+            catExceptionIDs = catExceptionIDs + ":not(#cat-" + catID + ")";
+        }
+
+        const fadeNodes = chartSVG.querySelectorAll(".chart-node" + catExceptionIDs + thisException);
+        fadeThese(fadeNodes);
+
+        const fadeLabels = viz.querySelectorAll(".chart-label" + catExceptionClasses + ":not(.origin)");
+        fadeThese(fadeLabels);
+    }
+}
+
+function unfadeAll() {
+
+    const allNodes = viz.querySelectorAll(".chart-node, .chart-label, .chart-link");
+    fadeThese(allNodes, false);
 }
 
 function clickOut(event) {
@@ -988,13 +1090,8 @@ function clickOut(event) {
         && classStr.indexOf("chart-label") == -1
         && event.target.tagName !== "circle"
     ) {
-        const allNodes = viz.querySelectorAll(".chart-node");
-
-        for (let i = 0; i < allNodes.length; i++) {
-            allNodes[i].classList.remove("highlighted"); // un-highlight all nodes
-            allNodes[i].classList.remove("selected"); // un-select all nodes
-        }
-
+        unfadeAll();
+        focusNothing();
         captionDefault();
 
         nodeSelected = false;
@@ -1012,6 +1109,8 @@ function clickNode(event) {
 
             event.currentTarget.classList.remove("selected");
             event.currentTarget.classList.remove("highlighted");
+            unfadeAll();
+            focusNothing();
             captionDefault();
 
             nodeSelected = false;
@@ -1019,16 +1118,15 @@ function clickNode(event) {
 
         } else {  // if clicking another node other than the one already selected
 
-            const allNodes = viz.querySelectorAll(".chart-node");
-
-            for (let i = 0; i < allNodes.length; i++) {
-                allNodes[i].classList.remove("highlighted");
-                allNodes[i].classList.remove("selected");
-            }
+            unfadeAll();
+            focusNothing();
 
             event.currentTarget.classList.add("highlighted");
             event.currentTarget.classList.add("selected");
 
+            if (dataObj.type == "category") {focusCatAffiliates(dataObj);}
+
+            fadeOtherNodes(event);
             captionNode(dataObj);
 
             activeNode = event.currentTarget.id;
@@ -1037,14 +1135,18 @@ function clickNode(event) {
     } else {
 
         if (activeNode == event.currentTarget.id) { // if clicking to select node for the first time
+            
             event.currentTarget.classList.add("selected");
+            fadeOtherNodes(event);
 
             nodeSelected = true;
 
         } else { // if clicking to select immediately after de-selecting the same node
+            
             event.currentTarget.classList.add("highlighted");
             event.currentTarget.classList.add("selected");
-
+            if (dataObj.type == "category") {focusCatAffiliates(dataObj);}
+            fadeOtherNodes(event);
             captionNode(dataObj);
 
             nodeSelected = true;

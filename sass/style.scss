@@ -1,6 +1,7 @@
 $bg-colour: #D8EAEC;
 $text-colour: #32475C;
 $viz-margin-vert: 3rem;
+$fade-opacity: 0.2;
 
 @font-face {
     font-family: Alice;
@@ -333,9 +334,28 @@ body {
             stroke-width: 3;
             stroke: rgb(195, 195, 195);
         }
+
+        &.faded {
+            stroke-opacity: $fade-opacity;
+        }
     }
 
     .chart-node {
+
+        // default circle settings
+
+        .focused {
+            stroke-opacity: 0;
+            fill-opacity: 0;
+            stroke-width: 2;
+        }
+
+        &.category, &.origin {
+            .size {
+                fill: $bg-colour;
+                stroke-width: 1;
+            }
+        }
 
         &.affiliate {
             .size {
@@ -344,18 +364,7 @@ body {
             }
         }
 
-        &.category {
-            .size {
-                fill: none;
-                stroke-width: 1;
-            }
-        }
-
-        .focused {
-            stroke-opacity: 0;
-            fill-opacity: 0;
-            stroke-width: 2;
-        }
+        // states
 
         &.highlighted {
             .focused {
@@ -366,6 +375,16 @@ body {
         &.selected {
             .focused {
                 stroke-opacity: 0.5;
+            }
+        }
+
+        &.faded {
+            &.category {
+                .size {stroke-opacity: $fade-opacity;}
+                .point {opacity: $fade-opacity;}
+            }
+            &.affiliate {
+                .size, .point {opacity: $fade-opacity;}
             }
         }
     }
@@ -391,6 +410,10 @@ body {
         &.origin {
             font-size: 1.5rem;
             transform: translate(-50%, 1.25rem);
+        }
+
+        &.faded {
+            opacity: $fade-opacity;
         }
     }
 
