@@ -1,7 +1,9 @@
 $bg-colour: #D8EAEC;
 $text-colour: #32475C;
 $viz-margin-vert: 3rem;
-$fade-opacity: 0.2;
+$fade-opacity: 0.25;
+$fill-opacity: 0.5;
+$swatch-opacity: 0.75;
 
 @font-face {
     font-family: Alice;
@@ -86,12 +88,11 @@ body {
     }
 
     .dialog-block {
+
+        margin-bottom: 2.25rem;
+
         &.header {
             margin-bottom: 0.9rem;
-        }
-
-        &.subhead {
-            margin-bottom: 2.25rem;
         }
 
         &.upload {
@@ -99,6 +100,10 @@ body {
             flex-direction: column;
             row-gap: 0.6rem;
             align-items: flex-start;
+        }
+
+        &:last-of-type {
+            margin-bottom: 0;
         }
     }
 
@@ -201,7 +206,7 @@ body {
     .caption-flex {
 
         display: flex;
-        column-gap: 1.1rem;
+        column-gap: 0.9rem;
 
         &.text-size {
             align-items: center;
@@ -284,8 +289,10 @@ body {
     }
 
     .icon {
-        &.color-square {
-            background-color: darkgrey;
+        &.color-swatch {
+            // background-color: darkgrey;
+            border-radius: 50%;
+            opacity: $swatch-opacity;
         }
 
         &.text-size {
@@ -447,6 +454,10 @@ body {
             font-size: 1rem;
             font-weight: 700;
         }
+    }
+
+    a {
+        color: white;
     }
 
 }

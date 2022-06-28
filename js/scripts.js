@@ -405,9 +405,13 @@ function makeCategories(data) { // create category objects for nodes
                 catObj.count++; // add to affiliates count
                 catObj[dimensions.num] += data[j][dimensions.num];
 
-            } else { // if category not in set
+            } else { // if category not in set                
 
-                let catObj = { name: newCat[k], count: 1 }
+                let catObj = {
+                    name: newCat[k],
+                    count: 1,
+                    color: catColors[newCat[k]]
+                }
                 catObj[dimensions.num] = data[j][dimensions.num];
 
                 categories.push(catObj); // create a category object
@@ -789,6 +793,9 @@ function ticked() {
 
 
 
+
+
+
 // ------INTERACTIONS------
 
 // whether elements have been created
@@ -798,6 +805,8 @@ affCaption = false; // affiliate caption created?
 nodeSelected = false; // whether node has been pinned
 activeNode = "";
 
+
+// CAPTIONS
 
 function captionDelete() { // delete all caption elements except containers
     captionA.innerHTML = "";
@@ -866,8 +875,8 @@ function captionCategory(dataObj) { // takes category object, creates and popula
 
     // caption A
 
-    const catSquare = newElement("div", "icon color-square heading-size"); // color square for category
-    // catSquare.style.backgroundColor = catObj.color;
+    const catSquare = newElement("div", "icon color-swatch heading-size"); // color square for category
+    catSquare.style.backgroundColor = catObj.color;
 
     const catName = newElement("div", "caption-heading lg"); // category name in heading
     catName.innerHTML = slashBreaks(catObj.name); // adds line break for names with "/"
@@ -959,8 +968,8 @@ function captionAffCats(affCats) { // takes dataObj dimensions.cat property
 
         const thisCat = categories.find(element => element.name == affCats[i]); // find category object
 
-        const catSquare = newElement("div", "icon color-square text-size");
-        // catSquare.style.backgroundColor = thisCat.color;
+        const catSquare = newElement("div", "icon color-swatch text-size");
+        catSquare.style.backgroundColor = thisCat.color;
 
         const catName = newElement("div", "caption-text");
         catName.innerText = thisCat.name;
@@ -988,6 +997,9 @@ function captionNode(dataObj) { // determines which caption function to run
             break;
     }
 }
+
+
+// HOVERS
 
 function focusNode(event) { // sticky argument determines whether caption stays after mouseout
 
@@ -1027,6 +1039,9 @@ function focusNothing() {
     }    
 }
 
+
+// FADING
+
 function fadeThese(elements, fade = true) { // takes an array of elements and fades or unfades them
 
     for (let i = 0; i < elements.length; i++) {
@@ -1055,33 +1070,86 @@ function fadeOtherNodes(event) {
 
     } else if (dataObj.type == "affiliate") {
 
-        const thisException = ":not(" + "#" + event.currentTarget.getAttribute("id") + ")";
-        let catExceptionIDs = new String(); // ids of cat nodes to which the affiliate belongs
-        let catExceptionClasses = new String(); // classes of cat labels to which the affiliate belongs
+        const notThisID = ":not(" + "#" + event.currentTarget.getAttribute("id") + ")";
+        const selectors = catSelectors(event); // get strings of :not() selectors and array of ids for related cat nodes
 
-        for (let i = 0; i < dataObj[dimensions.cat].length; i++) {
-            
-            const catID = slashUnderscore(dataObj[dimensions.cat][i]);
-
-            catExceptionClasses = catExceptionClasses + ":not(." + catID + ")";
-            catExceptionIDs = catExceptionIDs + ":not(#cat-" + catID + ")";
-        }
-
-        const fadeNodes = chartSVG.querySelectorAll(".chart-node" + catExceptionIDs + thisException);
+        const fadeNodes = chartSVG.querySelectorAll(".chart-node" + selectors.notIDs + notThisID);
         fadeThese(fadeNodes);
 
-        const fadeLabels = viz.querySelectorAll(".chart-label" + catExceptionClasses + ":not(.origin)");
+        const fadeLabels = viz.querySelectorAll(".chart-label" + selectors.notClasses + ":not(.origin)");
         fadeThese(fadeLabels);
+
+        let fadeLinks = viz.querySelectorAll(".chart-link");
+
+        for (let i = 0; i < fadeLinks.length; i++) {
+
+            const fadeStatus = linkFadeOrNot(dataObj, fadeLinks[i].__data__, selectors.ids);
+
+            if (!fadeStatus) {
+                fadeThese([fadeLinks[i]]);
+            }
+        }
     }
 }
 
-function unfadeAll() {
+function catSelectors(event) { // returns obj with cat IDs and selectors in array and string format
+
+    const dataObj = event.currentTarget.__data__;
+
+    const catIDs = new Array(); // ids of cat nodes to which the affiliate belongs
+    let notCatIDs = new String(); // ids as a string of CSS :not() selectors
+    let notCatClasses = new String(); // classes of cat labels as a string of CSS :not() selectors
+
+    for (let i = 0; i < dataObj[dimensions.cat].length; i++) {
+            
+        const id = slashUnderscore(dataObj[dimensions.cat][i]);
+
+        catIDs.push("cat-" + id);
+        notCatClasses = notCatClasses + ":not(." + id + ")";
+        notCatIDs = notCatIDs + ":not(#cat-" + id + ")";
+    }
+
+    const selectors = {
+        ids: catIDs,
+        notClasses: notCatClasses,
+        notIDs: notCatIDs
+    }
+
+    return selectors;
+    
+}
+
+function linkFadeOrNot(dataObj, linkObj, catIDs) {
+    // evaluates whether or not a link should be faded or not based on which node has been clicked
+
+    let match = false;
+
+    for (let j = 0; j < catIDs.length; j++) {
+
+        if (linkObj.target.id == catIDs[j]) { // end point of line == a category node that the affiliate belongs to
+            match = true;
+        }
+        if (
+            linkObj.source.id == catIDs[j] // beginning point of line == a category node that the affiliate belongs to
+            && linkObj.target.id == dataObj.id // end point of line == this affiliate node
+        ) {
+            match = true;
+        }
+    }
+
+    return match;
+}
+
+function unfadeAll() { // unfades all nodes, labels, and links
 
     const allNodes = viz.querySelectorAll(".chart-node, .chart-label, .chart-link");
     fadeThese(allNodes, false);
 }
 
-function clickOut(event) {
+
+// SELECTING
+
+function clickOut(event) { // deselects all nodes and shows default caption
 
     const classStr = event.target.classList.value;
     
@@ -1099,7 +1167,7 @@ function clickOut(event) {
     }
 }
 
-function clickNode(event) {
+function clickNode(event) { // selects or deselects clicked node
 
     const dataObj = event.currentTarget.__data__;
 
@@ -1155,9 +1223,8 @@ function clickNode(event) {
     }
 }
 
-function resetViz() {
 
-}
+// FULL SCREEN
 
 function toggleFullScreen() {
 
@@ -1173,7 +1240,7 @@ window.onload = function () {
 
     // start viz automatically only if page is running from server
     if (window.location.protocol !== 'file:') {
-        startFromServer(
+        startFromServer (
             dataSrc.csv, // offline data source
             getAPI_URL(dataSrc.url, dataSrc.sheetName), // online data source
             false // false --> run the viz based on an offline data source
