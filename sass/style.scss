@@ -51,14 +51,16 @@ body {
     position: relative;
     font-size: 16px;
     font-family: Arial, Helvetica, sans-serif;
-    position: relative;
-    // width: 100%;
-    // padding-top: 56.25%;
-    width: 1920px;
-    height: 1080px;
+    width: 100vw;
+    height: 100vh;
+    // width: 1920px;
+    // height: 1080px;
     color: $text-colour;
 
-
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
 
 
 
@@ -115,13 +117,16 @@ body {
     // LAYOUT
 
     #viz-wrapper {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
+        // position: absolute;
+        // top: 0;
+        // left: 0;
+        // right: 0;
+        width: 1920px;
+        height: 1080px;
         background-color: $bg-colour;
-        // padding: 2.5rem;      
+        // padding: 2.5rem;
+        transform-origin: 50% 0% 0;  
+        flex-shrink: 0;    
     }
 
     #viz-container {
@@ -322,14 +327,16 @@ body {
         margin-bottom: $viz-margin-vert;
     }
 
-    svg & #viz-chart-svg {}
+    svg & #viz-chart-svg {
+    }
 
     #viz-chart-labels {
         width: 100%;
         height: 100%;
         position: absolute;
-        top: 0;
-        left: 0;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
         z-index: 100;
         pointer-events: none;
     }

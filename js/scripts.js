@@ -28,11 +28,13 @@ let fullScreen,
 
 // DOM elements
 const viz = document.querySelector("#denom-affiliate-viz");
+const wrapper = viz.querySelector("#viz-wrapper");
 const chartSVG = viz.querySelector("#viz-chart-svg");
 const captionA = viz.querySelector("#caption-a");
 const captionB = viz.querySelector("#caption-b");
 const fileLoader = viz.querySelector("#file-loader");
 const fileUpload = viz.querySelector("#file-upload");
+const labels = viz.querySelector("#viz-chart-labels");
 
 // D3 elements
 const labelsD3 = d3.select("#viz-chart-labels");
@@ -126,7 +128,8 @@ function runViz(data) {
     vizLinks = populateLinks(masterData);
 
     // running front-end
-    setSVGDimensions(chartSVG);
+    resizeViz();
+    resizeSVG(chartSVG);
     defineViz(); // defines viz forceLayout, nodes, and links...then runs forceLayout
     captionDefault();
 }
@@ -500,36 +503,116 @@ function populateLinks(data, dimension = dimensions.cat) {
 
 // ------FRONT-END------
 
-function setSVGDimensions(svg) // svg == element for which we are setting the width and height attributes
+function resizeSVG(svg) // svg == element for which we are setting the width and height attributes
 {
-    var w, h;
+    const parentH = svg.parentElement.clientHeight;
+    
+    svgWidth = 1920;
+    svgHeight = 720;
 
-    w = svg.parentElement.clientWidth;
-    h = svg.parentElement.clientHeight;
+    svg.setAttribute("width", svgWidth);
+    svg.setAttribute("height", svgHeight);
+    // set chart labels parent as well
 
-    svg.setAttribute("width", w);
-    svg.setAttribute("height", h);
+    // if (parentH < svgHeight) {
+    //     const scale = parentH / svgHeight;
+    //     svg.style.transform = "scale(" + scale + "," + scale + ")";
 
-    svgWidth = w;
-    svgHeight = h;
+    // }
+}
+
+function resizeViz() {
+    const viewportH = viz.clientHeight;
+    const viewportW = viz.clientWidth;
+
+    const currentWrapW = wrapper.clientWidth;
+    const scale = viewportW / currentWrapW;
+    const targetWrapH = viewportH / scale;
+
+    wrapper.style.height = targetWrapH + "px";
+    console.log(wrapper.style.height);
+    wrapper.style.transform = "scale(" + scale + "," + scale + ")";
+
+    resizeSVG(chartSVG);
+
+
 }
 
 function defineViz() {
+
+    const circSizes = { // sizes of "point", "size", and "focus" circles
+        origin: { point: 6, sizeAdd: 9 },
+        cat: { point: 4, sizeAdd: 7 },
+        aff: { point: 0 }
+    }
+
+    const focusAdd = 18; // add to radius of circle with class "focus"
+
+    const forceSettings = { // all custom .force() parameters for d3.forceSimulation
+        link: {
+            strength: 2 / 3
+        },
+        charge: {
+            strength: {
+                origin: -500,
+                category: -800,
+                affiliate: -600
+            }
+        },
+        center: {
+            x: svgWidth / 2,
+            y: svgHeight / 2
+        },
+        radial: {
+            x: svgWidth / 2,
+            y: svgHeight / 2,
+            radius: {
+                origin: 0,
+                category: svgHeight * 0.25,
+                affiliate: svgHeight * 0.3
+            },
+            strength: {
+                origin: 0,
+                category: 0.5,
+                affiliate: 0.2
+            }
+        }
+    }
+
+    const radiiSettings = { // all custom radii for <circle> elements
+        focused: function (type, num) {
+            switch (type) {
+                case "origin": return circSizes.origin.point + circSizes.origin.sizeAdd + focusAdd;
+                case "category": return circSizes.cat.point + circSizes.cat.sizeAdd + focusAdd;
+                case "affiliate": return radiusCircle(num, circSizes.aff.point) + focusAdd;
+            }         
+        },
+        size: function (type, num) {
+            switch (type) {
+                case "origin": return circSizes.origin.point + circSizes.origin.sizeAdd;
+                case "category": return circSizes.cat.point + circSizes.cat.sizeAdd;
+                case "affiliate": return circSizes.aff.point + radiusCircle(num, circSizes.aff.point);
+            }
+        },
+        point: function (type) {
+            switch (type) {
+                case "origin": return circSizes.origin.point;
+                case "category": return circSizes.cat.point;
+                case "affiliate": return circSizes.aff.point;
+            }
+        }
+    }
 
     // defining d3 force simulation
     forceLayout = d3.forceSimulation()
         .force("link", d3.forceLink().id(function (d) { // links attract
             return d.id;
         })
-            .strength(1 / 3)
+            .strength(forceSettings.link.strength)
         )
         .force("charge", d3.forceManyBody() // nodes repel each other
             .strength(function (d) {
-                switch (d.type) {
-                    case "origin": return -600;
-                    case "category": return -400;
-                    case "affiliate": return -500;
-                }
+                return forceSettings.charge.strength[d.type];
             })
         )
         .force("collision", d3.forceCollide() // nodes repel if touching
@@ -537,44 +620,15 @@ function defineViz() {
                 return d.radius;
             })
         )
-        .force("y", d3.forceY(function (d) { // nodes attracted to y-value
-            switch (d.type) {
-                case "origin": return svgHeight * 0.9;
-                case "category":
-                    switch (d.segment) { // different y-value for categories depending on segment
-                        case 0: return svgHeight * 0.3;
-                        case 1: return svgHeight * 0.3;
-                        case 2: return svgHeight * 0.1;
-                    }
-                case "affiliate":
-                    if (d[dimensions.cat].length < 2) {
-                        let thisCat = categories.find(element => element.name == d[dimensions.cat][0]);
-                        switch (thisCat.segment) { // different y-value for affiliates depending on category
-                            case 0: return svgHeight * 0.2;
-                            case 1: return svgHeight * 0.1;
-                            case 2: return svgHeight * 0.1;
-                        }
-                    } else {
-                        return svgHeight * 0.5;
-                    }
-            }
-        }).strength(function (d) { // different force strength depending on type
-            switch (d.type) {
-                case "origin": return 2;
-                case "category": return 0.1;
-                case "affiliate": return 0.1;
-            }
-        })
-        )
+        .force("center", d3.forceCenter(forceSettings.center.x, forceSettings.center.y))
         .force("radial", d3.forceRadial() // nodes attracted to a circular path
-            .x(svgWidth / 2)
-            .y(svgHeight / 2)
+            .x(forceSettings.radial.x)
+            .y(forceSettings.radial.y)
             .radius(function (d) { // different-sized circular path depending on type
-                switch (d.type) {
-                    case "origin": return 0;
-                    case "category": return 100;
-                    case "affiliate": return 300;
-                }
+                return forceSettings.radial.radius[d.type];
+            })
+            .strength(function (d) {
+                return forceSettings.radial.strength[d.type];
             })
         )
         ;
@@ -587,9 +641,7 @@ function defineViz() {
         .attr("class", function (d) {
             let classString = "chart-link"; // all links have this class
 
-            if (d.type) {
-                classString += " " + d.type; // add link type as class
-            }
+            if (d.type) { classString += " " + d.type; } // add link type as class
 
             if (d[dimensions.cat]) {
                 classString += " " + slashUnderscore(d[dimensions.cat]); // add link category as class
@@ -599,15 +651,6 @@ function defineViz() {
         });
 
     // drawing nodes
-
-    // sizes of "point", "size", and "focus" circles
-    const circSizes = {
-        origin: {point: 6, sizeAdd: 9},
-        cat: {point: 4, sizeAdd: 7},
-        aff: {point: 0}
-    }
-    const focusAdd = 18;
-
     svgNode = svgD3.append("g").classed("group-nodes", true) // put all nodes in a <g>
         .selectAll("g")
         .data(vizNodes)
@@ -643,15 +686,7 @@ function defineViz() {
     svgNode.append("circle") // circle that indicates hover or click
         .attr("class", "focused")
         .attr("r", function (d) {
-
-            switch (d.type) {
-                case "origin":
-                    return circSizes.origin.point + circSizes.origin.sizeAdd + focusAdd;
-                case "category": 
-                    return circSizes.cat.point + circSizes.cat.sizeAdd + focusAdd;
-                case "affiliate": 
-                    return radiusCircle(d[dimensions.num], circSizes.aff.point) + focusAdd;
-            }
+            return radiiSettings.focused(d.type, d[dimensions.num]);
         })
         .attr("fill", function (d) {
             return getColor(d);
@@ -664,11 +699,7 @@ function defineViz() {
     svgNode.append("circle") // add a second circle
         .attr("class", "size") // circle type: size
         .attr("r", function (d) { // area of circle depends on dimensions.num (Congregataions)
-            switch (d.type) {
-                case "origin": return circSizes.origin.point + circSizes.origin.sizeAdd;
-                case "category": return circSizes.cat.point + circSizes.cat.sizeAdd;
-                case "affiliate": return circSizes.aff.point + radiusCircle(d[dimensions.num], circSizes.aff.point);
-            }
+            return radiiSettings.size(d.type, d[dimensions.num]);
         })
         .attr("fill", function (d) {
             return getColor(d);
@@ -681,11 +712,7 @@ function defineViz() {
     svgNode.append("circle") // every node has the same point circle in the middle
         .attr("class", "point") // circle type: point
         .attr("r", function (d) {
-            switch (d.type) {
-                case "origin": return circSizes.origin.point;
-                case "category": return circSizes.cat.point;
-                case "affiliate": return circSizes.aff.point;
-            }
+            return radiiSettings.point(d.type);
         })
         .attr("fill", function (d) {
             return getColor(d);
@@ -726,7 +753,6 @@ function defineViz() {
         ;
 
     // start force layout
-
     forceLayout
         .nodes(vizNodes).on("tick", ticked);
     forceLayout.force("link")
@@ -735,7 +761,7 @@ function defineViz() {
 
 function ticked() {
 
-    let xStretch = 1.8; // stretch the diagram
+    let xStretch = 2.3; // stretch the diagram
     let xOffset = svgWidth / 2;
 
     svgLink
@@ -1010,8 +1036,9 @@ function focusNode(event) { // sticky argument determines whether caption stays 
         focusNothing();
 
         event.currentTarget.classList.add("highlighted"); // re-highlight target node
-        if (dataObj.type == "category") {focusCatAffiliates(dataObj);
-}
+        if (dataObj.type == "category") {
+            focusCatAffiliates(dataObj);
+        }
 
         captionNode(dataObj);
 
@@ -1036,7 +1063,7 @@ function focusNothing() {
     for (let i = 0; i < allNodes.length; i++) {
         allNodes[i].classList.remove("highlighted"); // un-highlight all nodes
         allNodes[i].classList.remove("selected"); // un-select all nodes
-    }    
+    }
 }
 
 
@@ -1045,8 +1072,8 @@ function focusNothing() {
 function fadeThese(elements, fade = true) { // takes an array of elements and fades or unfades them
 
     for (let i = 0; i < elements.length; i++) {
-        if (fade) {elements[i].classList.add("faded");}
-        else {elements[i].classList.remove("faded");}
+        if (fade) { elements[i].classList.add("faded"); }
+        else { elements[i].classList.remove("faded"); }
     }
 
 }
@@ -1101,7 +1128,7 @@ function catSelectors(event) { // returns obj with cat IDs and selectors in arra
     let notCatClasses = new String(); // classes of cat labels as a string of CSS :not() selectors
 
     for (let i = 0; i < dataObj[dimensions.cat].length; i++) {
-            
+
         const id = slashUnderscore(dataObj[dimensions.cat][i]);
 
         catIDs.push("cat-" + id);
@@ -1116,7 +1143,7 @@ function catSelectors(event) { // returns obj with cat IDs and selectors in arra
     }
 
     return selectors;
-    
+
 }
 
 function linkFadeOrNot(dataObj, linkObj, catIDs) {
@@ -1152,7 +1179,7 @@ function unfadeAll() { // unfades all nodes, labels, and links
 function clickOut(event) { // deselects all nodes and shows default caption
 
     const classStr = event.target.classList.value;
-    
+
     if (
         classStr.indexOf("chart-node") == -1
         && classStr.indexOf("chart-label") == -1
@@ -1192,7 +1219,7 @@ function clickNode(event) { // selects or deselects clicked node
             event.currentTarget.classList.add("highlighted");
             event.currentTarget.classList.add("selected");
 
-            if (dataObj.type == "category") {focusCatAffiliates(dataObj);}
+            if (dataObj.type == "category") { focusCatAffiliates(dataObj); }
 
             fadeOtherNodes(event);
             captionNode(dataObj);
@@ -1203,17 +1230,17 @@ function clickNode(event) { // selects or deselects clicked node
     } else {
 
         if (activeNode == event.currentTarget.id) { // if clicking to select node for the first time
-            
+
             event.currentTarget.classList.add("selected");
             fadeOtherNodes(event);
 
             nodeSelected = true;
 
         } else { // if clicking to select immediately after de-selecting the same node
-            
+
             event.currentTarget.classList.add("highlighted");
             event.currentTarget.classList.add("selected");
-            if (dataObj.type == "category") {focusCatAffiliates(dataObj);}
+            if (dataObj.type == "category") { focusCatAffiliates(dataObj); }
             fadeOtherNodes(event);
             captionNode(dataObj);
 
@@ -1232,15 +1259,13 @@ function toggleFullScreen() {
 
 
 
-
-
 // ------EVENT LISTENERS------
 
 window.onload = function () {
 
     // start viz automatically only if page is running from server
     if (window.location.protocol !== 'file:') {
-        startFromServer (
+        startFromServer(
             dataSrc.csv, // offline data source
             getAPI_URL(dataSrc.url, dataSrc.sheetName), // online data source
             false // false --> run the viz based on an offline data source
@@ -1254,7 +1279,7 @@ window.onload = function () {
 }
 
 window.onresize = function () {
-    setSVGDimensions(chartSVG);
+    resizeSVG(chartSVG);
 }
 
 viz.onclick = clickOut;
