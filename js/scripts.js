@@ -24,7 +24,8 @@ let fullScreen,
     catCaption,
     affCaption,
     nodeSelected,
-    activeNode;
+    activeNode,
+    svgZoom;
 
 // DOM elements
 const viz = document.querySelector("#denom-affiliate-viz");
@@ -129,7 +130,6 @@ function runViz(data) {
 
     // running front-end
     resizeViz();
-    resizeSVG(chartSVG);
     defineViz(); // defines viz forceLayout, nodes, and links...then runs forceLayout
     captionDefault();
 }
@@ -503,39 +503,57 @@ function populateLinks(data, dimension = dimensions.cat) {
 
 // ------FRONT-END------
 
-function resizeSVG(svg) // svg == element for which we are setting the width and height attributes
-{
-    const parentH = svg.parentElement.clientHeight;
-    
-    svgWidth = 1920;
-    svgHeight = 720;
+function resizeSVG() {
+    // get svg dimensions
+    svgHeight = chartSVG.clientHeight;
+    svgWidth = chartSVG.clientWidth;
 
-    svg.setAttribute("width", svgWidth);
-    svg.setAttribute("height", svgHeight);
-    // set chart labels parent as well
+    // set labels container to same dimensions
+    labels.style.height = svgHeight + "px";
+    labels.style.width = svgWidth + "px";
 
-    // if (parentH < svgHeight) {
-    //     const scale = parentH / svgHeight;
-    //     svg.style.transform = "scale(" + scale + "," + scale + ")";
+    // get parent height
+    const parentHeight = chartSVG.parentElement.clientHeight;
 
-    // }
+    if (parentHeight < svgHeight) { // if parent is smaller than svg
+        // scale svg and labels container down to fit
+        const scale = parentHeight / svgHeight;
+        const transform = "translate(-50%,-50%) scale(" + scale + "," + scale + ")";
+        chartSVG.style.transform = transform;
+        labels.style.transform = transform;
+    }
 }
 
 function resizeViz() {
-    const viewportH = viz.clientHeight;
-    const viewportW = viz.clientWidth;
+
+    // get viz dimensions
+    let vizHeight = viz.clientHeight;
+    let vizWidth = viz.clientWidth;
+    const ratio = vizWidth / vizHeight;
+
+    // accepted aspect ratios
+    const maxRatio = 18 / 9;
+    const minRatio = 14 / 9;
+
+    if (ratio < minRatio) { // viewport ratio is smaller than minimum
+        vizHeight = vizWidth / minRatio;
+        viz.classList.remove("widescreen");
+    } else if (ratio >= minRatio && ratio <= maxRatio) { // viewport ratio within accepted range
+        viz.classList.remove("widescreen");
+    } else {
+        vizHeight = vizWidth / maxRatio; // viewport ratio is larger than maximum
+        viz.classList.add("widescreen");
+    }
 
     const currentWrapW = wrapper.clientWidth;
-    const scale = viewportW / currentWrapW;
-    const targetWrapH = viewportH / scale;
+    const scale = vizWidth / currentWrapW;
+    const targetWrapH = vizHeight / scale;
 
+    // scale viz down
     wrapper.style.height = targetWrapH + "px";
-    console.log(wrapper.style.height);
     wrapper.style.transform = "scale(" + scale + "," + scale + ")";
 
-    resizeSVG(chartSVG);
-
-
+    resizeSVG();
 }
 
 function defineViz() {
@@ -585,7 +603,7 @@ function defineViz() {
                 case "origin": return circSizes.origin.point + circSizes.origin.sizeAdd + focusAdd;
                 case "category": return circSizes.cat.point + circSizes.cat.sizeAdd + focusAdd;
                 case "affiliate": return radiusCircle(num, circSizes.aff.point) + focusAdd;
-            }         
+            }
         },
         size: function (type, num) {
             switch (type) {
@@ -806,8 +824,8 @@ function ticked() {
 
             let styleString = "";
 
-            const xVal = (d.x - (svgWidth / 2)) * xStretch + xOffset;
-            const yVal = d.y;
+            let xVal = (d.x - (svgWidth / 2)) * xStretch + xOffset;
+            let yVal = d.y;
 
             styleString += "left:" + xVal + "px;";
             styleString += "top: " + yVal + "px;";
@@ -1263,9 +1281,10 @@ function toggleFullScreen() {
 
 window.onload = function () {
 
-    // start viz automatically only if page is running from server
-    if (window.location.protocol !== 'file:') {
-        startFromServer(
+    resizeViz();
+
+    if (window.location.protocol !== 'file:') { // start viz automatically only if page is running from server
+        startFromServer (
             dataSrc.csv, // offline data source
             getAPI_URL(dataSrc.url, dataSrc.sheetName), // online data source
             false // false --> run the viz based on an offline data source
@@ -1279,7 +1298,7 @@ window.onload = function () {
 }
 
 window.onresize = function () {
-    resizeSVG(chartSVG);
+    resizeViz();
 }
 
 viz.onclick = clickOut;
