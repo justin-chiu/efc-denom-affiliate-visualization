@@ -36,6 +36,7 @@ const captionB = viz.querySelector("#caption-b");
 const fileLoader = viz.querySelector("#file-loader");
 const fileUpload = viz.querySelector("#file-upload");
 const labels = viz.querySelector("#viz-chart-labels");
+const buttonFullScreen = viz.querySelector("#button-fs");
 
 // D3 elements
 const labelsD3 = d3.select("#viz-chart-labels");
@@ -63,17 +64,17 @@ dimensions = { // which columns of spreadsheet to use for viz
 dataInfo = new Object(); // stores properties relating to entire masterData array
 
 catColors = {
-    "Anabaptist": "#FFA800",
-    "Anglican/Episcopal": "#039000",
+    "Anabaptist": "#E89A04",
+    "Anglican/Episcopal": "#1B6401",
     "Baptist": "#0A709B",
     "Holiness": "#3BA773",
     "Lutheran": "#00B2BD",
     "Pentecostal/Charismatic": "#FD291B",
     "Pietist": "#FF7CAB",
     "Reformed": "#8D1D8D",
-    "Restorationist": "#B9B20D",
-    "Mainline": "#D15E1D",
-    "Other": "#828282"
+    "Restorationist": "#CABB35",
+    "Mainline": "#E1730D",
+    "Other": "#6C6C6C"
 }
 
 /* masterData obj custom properties
@@ -521,6 +522,9 @@ function resizeSVG() {
         const transform = "translate(-50%,-50%) scale(" + scale + "," + scale + ")";
         chartSVG.style.transform = transform;
         labels.style.transform = transform;
+    } else {
+        chartSVG.style.transform = "";
+        labels.style.transform = "";
     }
 }
 
@@ -1273,6 +1277,33 @@ function clickNode(event) { // selects or deselects clicked node
 
 function toggleFullScreen() {
 
+    const doc = document.documentElement;
+
+    if (fullScreen) { // exit full-screen
+
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) { // Safari
+            document.webkitExitFullscreen();
+        } else if (document.msExitFullscreen) { // IE11
+            document.msExitFullscreen();
+        }
+
+    } else { // enter full-screen
+
+        if (doc.requestFullscreen) {
+            doc.requestFullscreen();
+        } else if (doc.webkitRequestFullscreen) { // Safari
+            doc.webkitRequestFullscreen();
+        } else if (doc.msRequestFullscreen) { // IE11
+            doc.msRequestFullscreen();
+        }
+    }
+}
+
+function fsButton() { // changes icon on full-screen button
+    buttonFullScreen.querySelector("#enter").classList.toggle("visible");
+    buttonFullScreen.querySelector("#exit").classList.toggle("visible");
 }
 
 
@@ -1284,7 +1315,7 @@ window.onload = function () {
     resizeViz();
 
     if (window.location.protocol !== 'file:') { // start viz automatically only if page is running from server
-        startFromServer (
+        startFromServer(
             dataSrc.csv, // offline data source
             getAPI_URL(dataSrc.url, dataSrc.sheetName), // online data source
             false // false --> run the viz based on an offline data source
@@ -1302,3 +1333,11 @@ window.onresize = function () {
 }
 
 viz.onclick = clickOut;
+
+buttonFullScreen.onclick = toggleFullScreen;
+
+document.addEventListener("fullscreenchange", function () {
+    resizeViz();
+    fsButton();
+    fullScreen = !fullScreen;
+});

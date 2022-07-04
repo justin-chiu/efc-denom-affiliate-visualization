@@ -1,6 +1,8 @@
 $bg-colour: #D8EAEC;
 $text-colour: #32475C;
-$viz-margin-vert: 3rem;
+$secondary: #4B5F73;
+$margin-vert: 3rem;
+$margin-horiz: 5rem;
 $fade-opacity: 0.25;
 $fill-opacity: 0.5;
 $swatch-opacity: 0.75;
@@ -158,8 +160,7 @@ body {
     #viz-header {
         display: flex;
         flex-direction: row;
-
-        margin-top: $viz-margin-vert;
+        margin-top: $margin-vert;
     }
 
     #viz-header-left {
@@ -168,7 +169,7 @@ body {
 
     #header-left-top,
     #header-left-bottom {
-        padding-left: 5rem;
+        padding-left: $margin-horiz;
     }
 
     #header-left-top {
@@ -180,37 +181,10 @@ body {
 
     #header-left-bottom {
         width: fit-content;
-        background-color: #4B5F73;
+        background-color: $secondary;
         padding-top: 1.25rem;
         padding-bottom: 1.25rem;
         padding-right: 2.2rem;
-    }
-
-    #viz-chart {
-        width: 100%;
-        flex-grow: 1;
-        position: relative;
-
-        margin-top: 0;
-        margin-left: 0;
-        margin-bottom: $viz-margin-vert;
-        margin-right: 0;
-    }
-
-
-    #viz-chart-labels, #viz-chart-svg {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-    }
-
-    #viz-chart-svg {
-    }
-
-    #viz-chart-labels {
-        z-index: 100;
-        pointer-events: none;
     }
 
 
@@ -223,7 +197,7 @@ body {
         margin-top: 2.2rem;
         // margin-bottom: 1.25rem;
         margin-left: 20%;
-        margin-right: 5.5rem;
+        margin-right: $margin-horiz;
 
         display: flex;
         justify-content: flex-end;
@@ -354,6 +328,34 @@ body {
 
     // CHART
 
+    #viz-chart {
+        width: 100%;
+        flex-grow: 1;
+        position: relative;
+
+        margin-top: 0;
+        margin-left: 0;
+        // margin-bottom: $margin-vert;
+        margin-bottom: 0;
+        margin-right: 0;
+    }
+
+
+    #viz-chart-labels, #viz-chart-svg {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+
+    #viz-chart-svg {
+    }
+
+    #viz-chart-labels {
+        z-index: 100;
+        pointer-events: none;
+    }
+
     .chart-link {
         stroke: rgb(180, 180, 180);
 
@@ -450,6 +452,42 @@ body {
 
 
 
+
+
+
+    // FOOTER
+
+    #viz-footer {
+        padding-left: $margin-horiz;
+        padding-right: $margin-horiz;
+        margin-bottom: $margin-vert;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .viz-button {
+        background-color: $bg-colour;
+        border: none;
+        width: 3rem;
+        height: 3rem;
+
+        img {
+            width: 100%;
+            height: 100%;
+            display: none;
+
+            &.visible {display: block;}
+        }
+
+        &:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+
+        &:active {
+            background-color: rgba(0, 0, 0, 0.15);
+        }
+    }
 
 
 
