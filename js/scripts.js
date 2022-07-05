@@ -24,6 +24,7 @@ let fullScreen,
     catCaption,
     affCaption,
     nodeSelected,
+    catSelected,
     activeNode,
     svgZoom;
 
@@ -36,6 +37,7 @@ const captionB = viz.querySelector("#caption-b");
 const fileLoader = viz.querySelector("#file-loader");
 const fileUpload = viz.querySelector("#file-upload");
 const labels = viz.querySelector("#viz-chart-labels");
+const footer = viz.querySelector("#viz-footer");
 const buttonFullScreen = viz.querySelector("#button-fs");
 
 // D3 elements
@@ -300,8 +302,61 @@ function getColor(dataObj) {
     }
 }
 
+function findInPath(path, tags, classes, ids) { // returns true if any of the classes, tags, or ids are found
 
+    let found = false;
+    let breakNow = false;
 
+    for (let i = 0; i < path.length; i++) { // for every element in path
+
+        if (path[i].id == "denom-affiliate-viz") { // stop loop if reached the outermost element of the viz
+            break;
+        }
+
+        for (let j = 0; j < ids.length; j++) { // search for ids
+
+            if (path[i].id == ids[j]) {
+                found = true;
+                breakNow = true;
+                break;
+            }
+        }
+
+        if (breakNow) {break;}
+
+        for (let j = 0; j < classes.length; j++) { // search for classes
+            
+            if (path[i].classList.contains(classes[j])) { // fix this line
+                found = true;
+                breakNow = true;
+                break;
+            }
+        }
+
+        if (breakNow) {break;}
+
+        for (let j = 0; j < tags.length; j++) { // search for tags
+            if (path[i].elementName == tags[j]) {
+                found = true;
+                break;
+            }
+        }
+    }
+
+    return found;
+}
+
+function getCatAffs(dataObj, getCatNode = false) { // returns array of nodes based on the dataObj of a category node
+    
+    let selector = "." + slashUnderscore(dataObj[dimensions.cat][0]);
+
+    if (!getCatNode) { // include only affiliate ndoes
+        selector = selector + ".affiliate";
+    }
+
+    const catAffs = chartSVG.querySelectorAll(selector); // all nodes with category class
+    return catAffs;
+}
 
 
 
@@ -769,8 +824,11 @@ function defineViz() {
                 }
             }
         })
-        .on("mouseenter", function (d) {
-            focusNode(d);
+        .on("mouseenter", function (e) {
+            focusNode(e);
+        })
+        .on("click", function (e) {
+            clickLabel(e);
         })
         ;
 
@@ -851,6 +909,7 @@ fullScreen = false;
 catCaption = false; // category caption created?
 affCaption = false; // affiliate caption created?
 nodeSelected = false; // whether node has been pinned
+catSelected = false; // whether a category node has been pinned
 activeNode = "";
 
 
@@ -886,31 +945,36 @@ function captionDefault() { // create and populate default caption
     const catCountHead = newElement("div", "caption-dimension-heading");
     catCountHead.innerHTML = "Faith Traditions";
 
-    const catCountNum = newElement("span", "caption-text");
+    const catCountIcon = newElement("img", "icon symbol text-size");
+    catCountIcon.setAttribute("src", "assets/faith_traditions_30px.svg");
+
+    const catCountNum = newElement("div", "caption-text");
     catCountNum.innerText = categories.length; // NEED TO SUBTRACT "Other" category
 
-    const catCountText = newElement("div", "caption-text"); // category (faith traditions) count and text
-    catCountText.append(catCountNum);
-    // catCountText.innerHTML += "&nbsp;Faith&nbsp;Traditions";
+    const catCountFlex = newElement("div", "caption-flex text-size");
+    catCountFlex.append(catCountIcon);
+    catCountFlex.append(catCountNum);
 
     const catCountGroup = newElement("div", "caption-group");
     catCountGroup.append(catCountHead);
-    catCountGroup.append(catCountText);
+    catCountGroup.append(catCountFlex);
 
     const congCountHead = newElement("div", "caption-dimension-heading");
     congCountHead.innerHTML = "Congregations";
 
-    const congCountNum = newElement("span", "caption-text");
+    const congCountIcon = newElement("img", "icon symbol text-size");
+    congCountIcon.setAttribute("src", "assets/congregations_30px.svg");
+
+    const congCountNum = newElement("div", "caption-text");
     congCountNum.innerText = commaNumber(dataInfo[dimensions.num]); // CALCULATE # of congregations
 
-    const congCountText = newElement("div", "caption-text"); // congregation count and text
-    congCountText.append(congCountNum);
-    // congCountText.innerHTML += "&nbsp;total";
-
+    const congCountFlex = newElement("div", "caption-flex text-size");
+    congCountFlex.append(congCountIcon);
+    congCountFlex.append(congCountNum);
 
     captionB.append(catCountGroup);
     captionB.append(congCountHead);
-    captionB.append(congCountText);
+    captionB.append(congCountFlex);
 };
 
 function captionCategory(dataObj) { // takes category object, creates and populates category caption
@@ -931,37 +995,48 @@ function captionCategory(dataObj) { // takes category object, creates and popula
 
     const catHeading = newElement("div", "caption-flex");
 
+    const catSubHead = newElement("div","caption-subhead-caps space-left");
+    catSubHead.innerHTML = "tradition";
+
     catHeading.append(catSquare);
     catHeading.append(catName);
+
     captionA.append(catHeading);
+    captionA.append(catSubHead);
 
     // caption B
 
     // how many affiliates in category
     const catAffHead = newElement("div", "caption-dimension-heading");
     catAffHead.innerHTML = "Affiliates";
-    const catAffNum = newElement("span", "caption-text");
+    const catAffIcon = newElement("img", "icon symbol text-size");
+    catAffIcon.setAttribute("src", "assets/affiliates_30px.svg");
+    const catAffNum = newElement("div", "caption-text");
     catAffNum.innerText = catObj.count;
-    const catAffText = newElement("div", "caption-text");
-    catAffText.append(catAffNum);
-    // catAffText.innerHTML += "&nbsp;Affiliates";
+    
+    const catAffFlex = newElement("div", "caption-flex text-size");
+    catAffFlex.append(catAffIcon);
+    catAffFlex.append(catAffNum);
 
     const catAffGroup = newElement("div", "caption-group");
     catAffGroup.append(catAffHead);
-    catAffGroup.append(catAffText);
+    catAffGroup.append(catAffFlex);
 
     // how many congregations in category
     const catCongHead = newElement("div", "caption-dimension-heading");
     catCongHead.innerHTML = "Congregations"
-    const catCongNum = newElement("span", "caption-text");
+    const catCongIcon = newElement("img", "icon symbol text-size");
+    catCongIcon.setAttribute("src","assets/congregations_30px.svg");
+    const catCongNum = newElement("div", "caption-text");
     catCongNum.innerText = commaNumber(catObj[dimensions.num]);
-    const catCongText = newElement("div", "caption-text");
-    catCongText.append(catCongNum);
-    // catCongText.innerHTML += "&nbsp;Total&nbsp;Congregations";
+
+    const catCongFlex = newElement("div", "caption-flex text-size");
+    catCongFlex.append(catCongIcon);
+    catCongFlex.append(catCongNum);
 
     captionB.append(catAffGroup);
     captionB.append(catCongHead);
-    captionB.append(catCongText);
+    captionB.append(catCongFlex);
 }
 
 function captionAffiliate(dataObj) { // takes affiliate data object, creates and populates affiliate caption
@@ -975,11 +1050,18 @@ function captionAffiliate(dataObj) { // takes affiliate data object, creates and
     ); // class and size of heading determined by number of characters
     affHeading.innerHTML = dataObj[dimensions.name];
 
+    const affSubIcon = newElement("img", "icon symbol sub-size");
+    affSubIcon.setAttribute("src", "assets/affiliate_18px.svg");
+
     const affSubHead = newElement("div", "caption-subhead-caps");
     affSubHead.innerHTML = "affiliate";
 
+    const affSubFlex = newElement("div", "caption-flex sub-size");
+    affSubFlex.append(affSubIcon);
+    affSubFlex.append(affSubHead);
+
     captionA.append(affHeading);
-    captionA.append(affSubHead);
+    captionA.append(affSubFlex);
 
     // caption B
 
@@ -992,20 +1074,21 @@ function captionAffiliate(dataObj) { // takes affiliate data object, creates and
 
     const affCongHead = newElement("div", "caption-dimension-heading");
     affCongHead.innerHTML = "Congregations";
-
-    const affCongNum = newElement("span", "caption-text");
+    const affCongIcon = newElement("img", "icon symbol text-size");
+    affCongIcon.setAttribute("src", "assets/congregations_30px.svg");
+    const affCongNum = newElement("div", "caption-text");
     affCongNum.innerText = commaNumber(dataObj[dimensions.num]);
 
-    const affCongText = newElement("div", "caption-text");
-    affCongText.append(affCongNum);
-    // affCongText.innerHTML += "&nbsp;Congregations";
+    const affCongFlex = newElement("div", "caption-flex text-size");
+    affCongFlex.append(affCongIcon);
+    affCongFlex.append(affCongNum);
 
     captionB.append(affCatHead);
     captionB.append(
         captionAffCats(dataObj[dimensions.cat])
     );
     captionB.append(affCongHead);
-    captionB.append(affCongText);
+    captionB.append(affCongFlex);
 }
 
 function captionAffCats(affCats) { // takes dataObj dimensions.cat property
@@ -1049,22 +1132,46 @@ function captionNode(dataObj) { // determines which caption function to run
 
 // HOVERS
 
-function focusNode(event) { // sticky argument determines whether caption stays after mouseout
+function focusNode(event) {
 
     const dataObj = event.currentTarget.__data__; // dataObj for target
+    let target = event.currentTarget;
+
+    if (event.currentTarget.classList.contains("chart-label")) { // if currentTarget is a label, get referenced node
+        target = chartSVG.querySelector("#" + dataObj.id);
+    }
 
     if (!nodeSelected) {
 
         focusNothing();
 
-        event.currentTarget.classList.add("highlighted"); // re-highlight target node
+        target.classList.add("highlighted"); // re-highlight target node
+
         if (dataObj.type == "category") {
             focusCatAffiliates(dataObj);
         }
 
         captionNode(dataObj);
 
-        activeNode = event.currentTarget.id;
+        activeNode = target.id;
+
+    } else if (catSelected) {
+
+        const selectedCat = chartSVG.querySelector(".selected");
+        const targetNode = event.currentTarget;
+
+        if ( // targetNode belongs to selectedCat category
+            targetNode.classList.contains (slashUnderscore(selectedCat.__data__[dimensions.cat][0]))
+        ) {
+
+            const catAffs = getCatAffs(selectedCat.__data__, true);
+            
+            changeHighlight(catAffs, false);
+
+            changeHighlight([targetNode], true);
+
+            captionNode(dataObj);
+        }
     }
 }
 
@@ -1074,7 +1181,9 @@ function focusCatAffiliates(dataObj) {
     const catAffs = chartSVG.querySelectorAll(catName); // all affiliates with category class
 
     for (let i = 0; i < catAffs.length; i++) {
-        catAffs[i].classList.add("highlighted");
+        if (!catAffs[i].classList.contains("category")) { // if not the category node
+            catAffs[i].classList.add("hl-half");
+        }
     }
 }
 
@@ -1084,7 +1193,22 @@ function focusNothing() {
 
     for (let i = 0; i < allNodes.length; i++) {
         allNodes[i].classList.remove("highlighted"); // un-highlight all nodes
+        allNodes[i].classList.remove("hl-half");
         allNodes[i].classList.remove("selected"); // un-select all nodes
+    }
+}
+
+function changeHighlight(nodes, darken = true) { 
+    // for each node in nodes array, changes class from hl-half to highlighted or vice versa if darken == false
+
+    for (let i = 0; i < nodes.length; i++) {
+        if (darken) {
+            nodes[i].classList.remove("hl-half");
+            nodes[i].classList.add("highlighted");
+        } else {
+            nodes[i].classList.remove("highlighted");
+            nodes[i].classList.add("hl-half");
+        }
     }
 }
 
@@ -1200,18 +1324,20 @@ function unfadeAll() { // unfades all nodes, labels, and links
 
 function clickOut(event) { // deselects all nodes and shows default caption
 
-    const classStr = event.target.classList.value;
+    const foundExceptions = findInPath ( // value == true if found any of the values below
+        event.path,
+        ["button", "circle"], // tags
+        ["chart-node", "chart-label"], // classes
+        ["viz-controls", "viz-footer-content","viz-header-left", "caption-a", "caption-b"] // ids
+    )
 
-    if (
-        classStr.indexOf("chart-node") == -1
-        && classStr.indexOf("chart-label") == -1
-        && event.target.tagName !== "circle"
-    ) {
+    if (!foundExceptions) { // if no tags, classes, ids found
         unfadeAll();
         focusNothing();
         captionDefault();
 
         nodeSelected = false;
+        catSelected = false;
         activeNode = "";
     }
 }
@@ -1224,13 +1350,12 @@ function clickNode(event) { // selects or deselects clicked node
 
         if (activeNode == event.currentTarget.id) { // if clicking node to de-select
 
-            event.currentTarget.classList.remove("selected");
-            event.currentTarget.classList.remove("highlighted");
             unfadeAll();
             focusNothing();
             captionDefault();
 
             nodeSelected = false;
+            catSelected = false;
             activeNode = "";
 
         } else {  // if clicking another node other than the one already selected
@@ -1241,7 +1366,12 @@ function clickNode(event) { // selects or deselects clicked node
             event.currentTarget.classList.add("highlighted");
             event.currentTarget.classList.add("selected");
 
-            if (dataObj.type == "category") { focusCatAffiliates(dataObj); }
+            if (dataObj.type == "category") {
+                focusCatAffiliates(dataObj);
+                catSelected = true;
+            } else {
+                catSelected = false;
+            }
 
             fadeOtherNodes(event);
             captionNode(dataObj);
@@ -1257,12 +1387,17 @@ function clickNode(event) { // selects or deselects clicked node
             fadeOtherNodes(event);
 
             nodeSelected = true;
+            if (dataObj.type == "category") {catSelected = true;}
 
         } else { // if clicking to select immediately after de-selecting the same node
 
             event.currentTarget.classList.add("highlighted");
             event.currentTarget.classList.add("selected");
-            if (dataObj.type == "category") { focusCatAffiliates(dataObj); }
+
+            if (dataObj.type == "category") {
+                focusCatAffiliates(dataObj);
+                catSelected = true;
+            }
             fadeOtherNodes(event);
             captionNode(dataObj);
 
@@ -1272,6 +1407,72 @@ function clickNode(event) { // selects or deselects clicked node
     }
 }
 
+function clickLabel(event) { // selects or deselects node based on clicked label
+
+    const dataObj = event.currentTarget.__data__;
+    const refNode = chartSVG.querySelector("#" + dataObj.id);
+
+    if (nodeSelected) {
+
+        if (activeNode == dataObj.id) { // clicking to deselect
+
+            unfadeAll();
+            focusNothing();
+            captionDefault();
+
+            nodeSelected = false;
+            catSelected = false;
+            activeNode = "";
+
+        } else { // clicking to select another node
+
+            unfadeAll();
+            focusNothing();
+
+            refNode.classList.add("highlighted");
+            refNode.classList.add("selected");
+
+            if (dataObj.type == "category") {
+                focusCatAffiliates(dataObj);
+                catSelected = true;
+            } else {
+                catSelected = false;
+            }
+
+            fadeOtherNodes(event);
+            captionNode(dataObj);
+
+            activeNode = dataObj.id;
+        }
+
+    } else {
+
+        if (activeNode == dataObj.id) { // if clicking to select node for the first time
+
+            refNode.classList.add("selected");
+            fadeOtherNodes(event);
+
+            nodeSelected = true;
+            if (dataObj.type == "category") {catSelected = true;}
+
+        } else { // if clicking to select immediately after de-selecting the same node
+
+            refNode.classList.add("highlighted");
+            refNode.classList.add("selected");
+
+            if (dataObj.type == "category") {
+                focusCatAffiliates(dataObj);
+                catSelected = true;
+            }
+            fadeOtherNodes(event);
+            captionNode(dataObj);
+
+            nodeSelected = true;
+            activeNode = dataObj.id;
+        }
+
+    }
+}
 
 // FULL SCREEN
 
@@ -1305,6 +1506,9 @@ function fsButton() { // changes icon on full-screen button
     buttonFullScreen.querySelector("#enter").classList.toggle("visible");
     buttonFullScreen.querySelector("#exit").classList.toggle("visible");
 }
+
+
+
 
 
 

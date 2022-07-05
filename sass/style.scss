@@ -1,9 +1,9 @@
 $bg-colour: #D8EAEC;
-$text-colour: #32475C;
-$secondary: #4B5F73;
-$margin-vert: 3rem;
-$margin-horiz: 5rem;
-$fade-opacity: 0.25;
+$primary-clr: #32475C;
+$secondary-clr: #4B5F73;
+$spacing-vert: 3rem;
+$spacing-horiz: 5.5rem;
+$fade-opacity: 0.2;
 $fill-opacity: 0.5;
 $swatch-opacity: 0.75;
 
@@ -39,8 +39,6 @@ body {
     margin: 0;
 }
 
-// remove this for embed
-
 #denom-affiliate-viz {
     * {
         box-sizing: border-box;
@@ -55,9 +53,8 @@ body {
     font-family: Arial, Helvetica, sans-serif;
     width: 100vw;
     height: 100vh;
-    // width: 1920px;
-    // height: 1080px;
-    color: $text-colour;
+    color: $primary-clr
+;
 
     display: flex;
     flex-direction: column;
@@ -69,13 +66,28 @@ body {
     -moz-user-select: none;
 
     &.widescreen {
-        
+
         justify-content: flex-start;
 
-        #viz-wrapper {
-            transform-origin: 50% 0% 0;
+        #viz-wrapper {transform-origin: 50% 0% 0;}
+    }
+
+    p {
+        margin: 0;
+
+        &.subtitle {
+            font-family: 'Raleway', sans-serif;
+            font-size: 1rem;
+            font-weight: 700;
         }
     }
+
+    a {
+        color: white;
+    }
+
+
+
 
     // FILE LOADER
 
@@ -91,14 +103,13 @@ body {
         background-color: $bg-colour;
         z-index: 200;
 
-        &.loader-hide {
-            display: none;
-        }
+        &.loader-hide {display: none;}
     }
 
     #file-loader-dialog {
         padding: 4.5rem 3.5rem 4rem 3.5rem;
-        background-color: $text-colour;
+        background-color: $primary-clr
+    ;
         color: white;
     }
 
@@ -106,9 +117,7 @@ body {
 
         margin-bottom: 2.25rem;
 
-        &.header {
-            margin-bottom: 0.9rem;
-        }
+        &.header {margin-bottom: 0.9rem;}
 
         &.upload {
             display: flex;
@@ -117,9 +126,7 @@ body {
             align-items: flex-start;
         }
 
-        &:last-of-type {
-            margin-bottom: 0;
-        }
+        &:last-of-type {margin-bottom: 0;}
     }
 
 
@@ -130,14 +137,9 @@ body {
     // LAYOUT
 
     #viz-wrapper {
-        // position: absolute;
-        // top: 0;
-        // left: 0;
-        // right: 0;
         width: 1920px;
         height: 1080px;
         background-color: $bg-colour;
-        // padding: 2.5rem;
         flex-shrink: 0;    
     }
 
@@ -157,23 +159,30 @@ body {
         justify-content: space-between;
     }
 
+
+
+
+    // HEADER
+
     #viz-header {
         display: flex;
         flex-direction: row;
-        margin-top: $margin-vert;
+        margin-top: $spacing-vert;
     }
 
     #viz-header-left {
         color: white;
+        margin-bottom: 0.2rem;
     }
 
     #header-left-top,
     #header-left-bottom {
-        padding-left: $margin-horiz;
+        padding-left: $spacing-horiz;
     }
 
     #header-left-top {
-        background-color: $text-colour;
+        background-color: $primary-clr
+    ;
         padding-top: 2.2rem;
         padding-bottom: 1.9rem;
         padding-right: 2.2rem;
@@ -181,10 +190,23 @@ body {
 
     #header-left-bottom {
         width: fit-content;
-        background-color: $secondary;
+        background-color: $secondary-clr;
         padding-top: 1.25rem;
         padding-bottom: 1.25rem;
         padding-right: 2.2rem;
+    }
+
+    .logo {
+        width: 12.5rem;
+        mix-blend-mode: lighten;
+    }
+
+    h1 {
+        font-size: 3rem;
+        font-family: Alice, serif;
+        margin: 0;
+        font-weight: normal;
+        line-height: 1.05;
     }
 
 
@@ -195,14 +217,13 @@ body {
     #viz-header-right {
         flex-grow: 1;
         margin-top: 2.2rem;
-        // margin-bottom: 1.25rem;
         margin-left: 20%;
-        margin-right: $margin-horiz;
+        margin-right: $spacing-horiz;
 
         display: flex;
         justify-content: flex-end;
         align-items: flex-start;
-        column-gap: 3.25rem;
+        column-gap: 4.75rem;
     }
 
     .caption-container {
@@ -210,8 +231,7 @@ body {
         &#caption-a {}
 
         &#caption-b {
-
-            padding-left: 3rem;
+            padding-left: 4.5rem;
             border-left-style: solid;
             border-left-width: 1px;
         }
@@ -220,12 +240,16 @@ body {
     .caption-flex {
 
         display: flex;
-        column-gap: 0.9rem;
+        column-gap: 2.1rem;
 
         &.text-size {
             align-items: center;
-            column-gap: 0.6rem;
+            column-gap: 0.55rem;
             margin-bottom: 0.25rem;
+        }
+
+        &.sub-size {
+            column-gap: 0.45rem;
         }
     }
 
@@ -250,36 +274,24 @@ body {
         margin-top: -0.2em;
         margin-bottom: 0.75rem;
 
-        &.xl {
-            font-size: 6.75rem;
-        }
+        &.xl {font-size: 6.75rem;}
 
-        // more sizes
-
-        // &.lg {
-        //     font-size: 3rem;
-        //     line-height: 1.1;
-        // }
-        // &.md {
-        //     font-size: 2.75rem;
-        // }
-        // &.sm {
-        //     font-size: 2.25rem;
-        // }
-
-        &.small-caps {
-            margin-top: -0.35em;
-        }
+        &.small-caps { margin-top: -0.35em;}
     }
 
     .caption-subhead-caps {
         font-family: 'Raleway', sans-serif;
-        font-size: 1.25rem;
+        font-size: 1.15rem;
         font-weight: 600;
         letter-spacing: 0.03em;
         line-height: 1.15;
         text-transform: uppercase;
         margin-bottom: 0.5rem;
+        margin-left: 0.075rem;
+
+        &.space-left {
+            margin-left: 7.5rem;
+        }
     }
 
     .caption-dimension-heading {
@@ -304,19 +316,40 @@ body {
 
     .icon {
         &.color-swatch {
-            // background-color: darkgrey;
             border-radius: 50%;
             opacity: $swatch-opacity;
+
+            &.text-size {
+                width: 1.55rem;
+                height: 1.55rem;
+                margin: 0.1rem;
+            }
+    
+            &.heading-size {
+                width: 5.25rem;
+                height: 5.25rem;
+                margin-top: -0.425rem;
+                margin-bottom: -5.5rem;
+
+                background-image: url("../assets/faith_traditions_rev_30px.svg");
+                background-size: 40px 40px;
+                background-repeat: no-repeat;
+                background-position: center;
+            }
         }
 
-        &.text-size {
-            width: 1.55rem;
-            height: 1.55rem;
-        }
+        &.symbol {
+            
+            &.text-size {
+                width: 1.75rem;
+                height: 1.75rem;
+            }
 
-        &.heading-size {
-            width: 1.95rem;
-            height: 1.95rem;
+            &.sub-size {
+                width: 1.15rem;
+                height: 1.15rem;
+                margin-top: 0.05rem;
+            }
         }
     }
 
@@ -335,7 +368,6 @@ body {
 
         margin-top: 0;
         margin-left: 0;
-        // margin-bottom: $margin-vert;
         margin-bottom: 0;
         margin-right: 0;
     }
@@ -364,12 +396,12 @@ body {
             stroke: rgb(195, 195, 195);
         }
 
-        &.faded {
-            stroke-opacity: $fade-opacity;
-        }
+        &.faded {stroke-opacity: $fade-opacity;}
     }
 
     .chart-node {
+
+        cursor: pointer;
 
         // default circle settings
 
@@ -396,15 +428,15 @@ body {
         // states
 
         &.highlighted {
-            .focused {
-                fill-opacity: 0.2;
-            }
+            .focused {fill-opacity: 0.3;}
+        }
+
+        &.hl-half {
+            .focused {fill-opacity: 0.15;}
         }
 
         &.selected {
-            .focused {
-                stroke-opacity: 0.5;
-            }
+            .focused {stroke-opacity: 0.5;}
         }
 
         &.faded {
@@ -421,7 +453,7 @@ body {
     .chart-label {
 
         position: absolute;
-        transform: translate(-50%, 0.9rem);
+        transform: translate(-50%, 1rem);
 
         text-shadow: -2px -2px 2px $bg-colour, -2px 2px 2px $bg-colour, 2px 2px 2px $bg-colour, 2px -2px 2px $bg-colour;
 
@@ -433,7 +465,7 @@ body {
         -webkit-user-select: none;
         -moz-user-select: none;
 
-        cursor: default;
+        cursor: pointer;
 
         &.category, &.origin {
             opacity: 1;
@@ -445,9 +477,7 @@ body {
             transform: translate(-50%, 1.25rem);
         }
 
-        &.faded {
-            opacity: $fade-opacity;
-        }
+        &.faded {opacity: $fade-opacity;}
     }
 
 
@@ -458,12 +488,31 @@ body {
     // FOOTER
 
     #viz-footer {
-        padding-left: $margin-horiz;
-        padding-right: $margin-horiz;
-        margin-bottom: $margin-vert;
+        padding-left: $spacing-horiz;
+        padding-right: $spacing-horiz;
+        margin-bottom: $spacing-vert;
         display: flex;
         justify-content: space-between;
         align-items: center;
+    }
+
+    .footer-item {
+        display: flex;
+        align-items: center;
+        column-gap: 1.125rem;
+    }
+
+    .footer-text {
+        font-family: Raleway, sans-serif;
+        font-size: 1.25rem;
+        margin-bottom: 0.05rem;
+    }
+
+    .footer-circle {
+        fill: none;
+        stroke: $primary-clr
+    ;
+        stroke-width: 1.5;
     }
 
     .viz-button {
@@ -471,11 +520,13 @@ body {
         border: none;
         width: 3rem;
         height: 3rem;
+        cursor: pointer;
 
         img {
             width: 100%;
             height: 100%;
             display: none;
+            pointer-events: none;
 
             &.visible {display: block;}
         }
@@ -488,38 +539,4 @@ body {
             background-color: rgba(0, 0, 0, 0.15);
         }
     }
-
-
-
-
-
-    // DESIGN
-
-    .logo {
-        width: 12.5rem;
-        mix-blend-mode: lighten;
-    }
-
-    h1 {
-        font-size: 3rem;
-        font-family: Alice, serif;
-        margin: 0;
-        font-weight: normal;
-        line-height: 1.05;
-    }
-
-    p {
-        margin: 0;
-
-        &.subtitle {
-            font-family: 'Raleway', sans-serif;
-            font-size: 1rem;
-            font-weight: 700;
-        }
-    }
-
-    a {
-        color: white;
-    }
-
 }
