@@ -20,10 +20,10 @@
                     <div id="viz-header-left">
                         <div id="header-left-top">
                             <img class="logo" src="assets/efc-logo-white-horizontal.png">
-                            <h1>Denomination<br>Affiliates</h1>
+                            <h1>Denominational<br>Affiliates</h1>
                         </div>
                         <div id="header-left-bottom">
-                            <p class="subtitle">a dynamic data visualization</p>
+                            <p class="bold">a dynamic data visualization</p>
                         </div>
                     </div>
                     <div id="viz-header-right">
@@ -42,14 +42,15 @@
                 <footer id="viz-footer">
                     <div id="viz-footer-content">
                         <div class="footer-item">
-                            <img src="assets/congregations_legend_45px.svg" width="50px" height="50px">
+                            <img src="assets/congregations_legend_45px.svg" width="48px" height="48px">
                             <p class="footer-text">circle size represents <strong>number of congregations</strong></p>
                         </div>
                     </div>
                     <div id="viz-controls">
+                        <p>enter&nbsp;full&#8209;screen</p>
                         <button class="viz-button" id="button-fs">
-                            <img src="assets/fullscreen_black_24dp.svg" class="visible" id="enter">
-                            <img src="assets/fullscreen_exit_black_24dp.svg" id="exit">
+                            <img src="assets/fullscreen_black_24dp.svg" id="enter">
+                            <img src="assets/fullscreen_exit_black_24dp.svg" class="invisible" id="exit">
                         </button>
                     </div>
                 </footer>
@@ -57,18 +58,24 @@
             <div id="file-loader" class="loader-hide">
                 <div id="file-loader-dialog">
                     <div class="dialog-block header">
-                        <img class="logo" src="assets/efc-logo-white-horizontal.png">
-                        <h1>Denomination<br>Affiliates</h1>
+                        <div class="dialog-group">
+                            <img class="logo" src="assets/efc-logo-white-horizontal.png">
+                            <h1>Denominational<br>Affiliates</h1>
+                        </div>
+                        <div class="dialog-group">
+                            <p class="bold">A dynamic data visualization</p>
+                        </div>
                     </div>
-                    <div class="dialog-block subhead">
-                        <p class="subtitle">A dynamic data visualization</p>
-                    </div>
-                    <div class="dialog-block upload">
-                    <p>Please locate "data.csv" file:</p>
+                    <div class="dialog-block">
+                        <label for="file-upload">Please locate "data.csv" file:</label>
                         <input id="file-upload"type="file" id="data-upload" name="filename" accept=".csv"></input>
                     </div>
                     <div class="dialog-block">
-                        <p>Designed and developed by Justin Chiu with <a href="https://d3js.org/" target="_blank">d3.js</a>.</p>
+                        <label for="responsive-checkbox">Scale to window size:</label>
+                        <input id="responsive-checkbox" type="checkbox"></input>
+                    </div>
+                    <div class="dialog-block">
+                        <p class="bold">Designed and developed by Justin Chiu with <a href="https://d3js.org/" target="_blank">d3.js</a>.</p>
                     </div>
             </div>
         </div>

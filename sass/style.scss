@@ -53,9 +53,7 @@ body {
     font-family: Arial, Helvetica, sans-serif;
     width: 100vw;
     height: 100vh;
-    color: $primary-clr
-;
-
+    color: $primary-clr;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -68,23 +66,48 @@ body {
     &.widescreen {
 
         justify-content: flex-start;
-
         #viz-wrapper {transform-origin: 50% 0% 0;}
     }
+
+    #viz-wrapper {
+        width: 1920px;
+        height: 1080px;
+        background-color: $bg-colour;
+        flex-shrink: 0;    
+    }
+
+    #viz-container {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        height: 100%;
+    }
+
+
+
+
+
+    // OVERRIDE DEFAULTS
 
     p {
         margin: 0;
 
-        &.subtitle {
-            font-family: 'Raleway', sans-serif;
-            font-size: 1rem;
-            font-weight: 700;
-        }
+        font-family: 'Raleway', sans-serif;
+        font-size: 1rem;
+        font-weight: 600;
+
+        strong, &.bold {font-weight: 700;}
     }
 
     a {
         color: white;
     }
+
+    figure {
+        margin: 0;
+    }
+
+
 
 
 
@@ -116,48 +139,22 @@ body {
     .dialog-block {
 
         margin-bottom: 2.25rem;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        row-gap: 0.7rem;
 
-        &.header {margin-bottom: 0.9rem;}
-
-        &.upload {
-            display: flex;
-            flex-direction: column;
-            row-gap: 0.6rem;
-            align-items: flex-start;
+        &:last-of-type {
+            margin-bottom: 0;
         }
+    }
 
-        &:last-of-type {margin-bottom: 0;}
+    #responsive-checkbox {
+        margin: 0;
     }
 
 
 
-
-
-
-    // LAYOUT
-
-    #viz-wrapper {
-        width: 1920px;
-        height: 1080px;
-        background-color: $bg-colour;
-        flex-shrink: 0;    
-    }
-
-    #viz-container {
-        display: flex;
-        flex-direction: column;
-        width: 100%;
-        height: 100%;
-    }
-
-    #viz-sidebar {
-        flex-grow: 1;
-        max-width: 33.33%;
-
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-    }
 
 
 
@@ -172,7 +169,7 @@ body {
 
     #viz-header-left {
         color: white;
-        margin-bottom: 0.2rem;
+        margin-bottom: 0.5rem;
     }
 
     #header-left-top,
@@ -181,8 +178,7 @@ body {
     }
 
     #header-left-top {
-        background-color: $primary-clr
-    ;
+        background-color: $primary-clr;
         padding-top: 2.2rem;
         padding-bottom: 1.9rem;
         padding-right: 2.2rem;
@@ -234,27 +230,31 @@ body {
             padding-left: 4.5rem;
             border-left-style: solid;
             border-left-width: 1px;
+
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            row-gap: 1.5rem;
         }
     }
 
     .caption-flex {
 
         display: flex;
-        column-gap: 2.1rem;
 
-        &.text-size {
-            align-items: center;
+        &.gap-lg {
+            column-gap: 2.1rem;
+        }
+
+        &.gap-md {
             column-gap: 0.55rem;
             margin-bottom: 0.25rem;
+            align-items: center;
         }
 
-        &.sub-size {
+        &.gap-sm {
             column-gap: 0.45rem;
         }
-    }
-
-    .caption-group {
-        margin-bottom: 1.5rem;
     }
 
 
@@ -287,11 +287,6 @@ body {
         line-height: 1.15;
         text-transform: uppercase;
         margin-bottom: 0.5rem;
-        margin-left: 0.075rem;
-
-        &.space-left {
-            margin-left: 7.5rem;
-        }
     }
 
     .caption-dimension-heading {
@@ -314,43 +309,48 @@ body {
 
     }
 
-    .icon {
-        &.color-swatch {
-            border-radius: 50%;
-            opacity: $swatch-opacity;
+    .color-swatch {
+        border-radius: 50%;
+        opacity: $swatch-opacity;
+        background-repeat: no-repeat;
+        background-position: center;
 
-            &.text-size {
-                width: 1.55rem;
-                height: 1.55rem;
-                margin: 0.1rem;
-            }
+        &.md {
+            width: 1.55rem;
+            height: 1.55rem;
+            margin: 0.1rem;
+        }
     
-            &.heading-size {
-                width: 5.25rem;
-                height: 5.25rem;
-                margin-top: -0.425rem;
-                margin-bottom: -5.5rem;
+        &.lg-category {
+            width: 5.25rem;
+            height: 5.25rem;
+            margin-top: -0.425rem;
 
-                background-image: url("../assets/faith_traditions_rev_30px.svg");
-                background-size: 40px 40px;
-                background-repeat: no-repeat;
-                background-position: center;
-            }
+            background-image: url("../assets/faith_traditions_rev_30px.svg");
+            background-size: 40px 40px;
         }
+    }
 
-        &.symbol {
+    .symbol {
+
+        background-repeat: no-repeat;
+        background-position: center;
             
-            &.text-size {
-                width: 1.75rem;
-                height: 1.75rem;
-            }
-
-            &.sub-size {
-                width: 1.15rem;
-                height: 1.15rem;
-                margin-top: 0.05rem;
-            }
+        &.md {
+            width: 1.75rem;
+            height: 1.75rem;
         }
+
+        &.sm {
+            width: 1.15rem;
+            height: 1.15rem;
+            margin-top: 0.05rem;
+        }
+
+        &.faith-traditions {background-image: url("../assets/faith_traditions_30px.svg");}
+        &.congregations {background-image: url("../assets/congregations_30px.svg");}
+        &.affiliates {background-image: url("../assets/affiliates_30px.svg");}
+        &.affiliate {background-image: url("../assets/affiliate_18px.svg");}
     }
 
 
@@ -427,7 +427,7 @@ body {
 
         // states
 
-        &.highlighted {
+        &.hl-full {
             .focused {fill-opacity: 0.3;}
         }
 
@@ -496,6 +496,12 @@ body {
         align-items: center;
     }
 
+    #viz-controls {
+        display: flex;
+        align-items: center;
+        column-gap: 0.75rem;
+    }
+
     .footer-item {
         display: flex;
         align-items: center;
@@ -510,25 +516,24 @@ body {
 
     .footer-circle {
         fill: none;
-        stroke: $primary-clr
-    ;
+        stroke: $primary-clr;
         stroke-width: 1.5;
     }
 
     .viz-button {
         background-color: $bg-colour;
         border: none;
-        width: 3rem;
         height: 3rem;
+        width: 3rem;
         cursor: pointer;
 
         img {
             width: 100%;
             height: 100%;
-            display: none;
+            display: block;
             pointer-events: none;
 
-            &.visible {display: block;}
+            &.invisible {display: none;}
         }
 
         &:hover {

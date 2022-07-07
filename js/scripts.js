@@ -36,6 +36,7 @@ const captionA = viz.querySelector("#caption-a");
 const captionB = viz.querySelector("#caption-b");
 const fileLoader = viz.querySelector("#file-loader");
 const fileUpload = viz.querySelector("#file-upload");
+const respCheckbox = viz.querySelector("#responsive-checkbox");
 const labels = viz.querySelector("#viz-chart-labels");
 const footer = viz.querySelector("#viz-footer");
 const buttonFullScreen = viz.querySelector("#button-fs");
@@ -223,7 +224,7 @@ function radiusCircle(area, add = 0, multiplier = 2.75) {
     return Math.sqrt(area / Math.PI) * multiplier + add;
 }
 
-function newElement(tag, classList, id) {
+function newElement(tag, classList, id, innerHTML) {
 
     const element = document.createElement(tag);
 
@@ -233,6 +234,10 @@ function newElement(tag, classList, id) {
 
     if (id) {
         element.setAttribute("id", id);
+    }
+
+    if (innerHTML) {
+        element.innerHTML = innerHTML;
     }
 
     return element;
@@ -295,6 +300,8 @@ function getColor(dataObj) {
         for (let i = 0; i < dataObj[dimensions.cat].length; i++) {
             if (catColors[dataObj[dimensions.cat][i]]) { // first color that exists
                 return catColors[dataObj[dimensions.cat][i]];
+            } else {
+                return catColors["Other"];
             }
         }
     } else {
@@ -322,10 +329,10 @@ function findInPath(path, tags, classes, ids) { // returns true if any of the cl
             }
         }
 
-        if (breakNow) {break;}
+        if (breakNow) { break; }
 
         for (let j = 0; j < classes.length; j++) { // search for classes
-            
+
             if (path[i].classList.contains(classes[j])) { // fix this line
                 found = true;
                 breakNow = true;
@@ -333,7 +340,7 @@ function findInPath(path, tags, classes, ids) { // returns true if any of the cl
             }
         }
 
-        if (breakNow) {break;}
+        if (breakNow) { break; }
 
         for (let j = 0; j < tags.length; j++) { // search for tags
             if (path[i].elementName == tags[j]) {
@@ -347,7 +354,7 @@ function findInPath(path, tags, classes, ids) { // returns true if any of the cl
 }
 
 function getCatAffs(dataObj, getCatNode = false) { // returns array of nodes based on the dataObj of a category node
-    
+
     let selector = "." + slashUnderscore(dataObj[dimensions.cat][0]);
 
     if (!getCatNode) { // include only affiliate ndoes
@@ -450,7 +457,7 @@ function makeCategories(data) { // create category objects for nodes
 
     let catSet = new Set(); // list of unique categories
     categories = new Array(); // global categories array
-    let nodesAdded = 0; // counter
+    dataInfo.catCount = 0; // count how many categories
 
     for (let j = 0; j < data.length; j++) { // for every data obj
 
@@ -464,7 +471,7 @@ function makeCategories(data) { // create category objects for nodes
                 catObj.count++; // add to affiliates count
                 catObj[dimensions.num] += data[j][dimensions.num];
 
-            } else { // if category not in set                
+            } else { // if category not in set
 
                 let catObj = {
                     name: newCat[k],
@@ -474,18 +481,13 @@ function makeCategories(data) { // create category objects for nodes
                 catObj[dimensions.num] = data[j][dimensions.num];
 
                 categories.push(catObj); // create a category object
+
+                if (catObj.name !== "Other") { // add to global category count
+                    dataInfo.catCount++;
+                }
             }
 
             catSet.add(newCat[k]); // add category to set
-
-            /* // GHOST NODES
-
-            if (newCat.length > 1) { // if multiple categories (faith traditions)
-                ghostNode(data[j], j, k, nodesAdded); // create ghostNode
-                nodesAdded++; // how many ghost nodes were added
-            }
-
-            */
         }
     }
 }
@@ -585,32 +587,42 @@ function resizeSVG() {
 
 function resizeViz() {
 
-    // get viz dimensions
-    let vizHeight = viz.clientHeight;
-    let vizWidth = viz.clientWidth;
-    const ratio = vizWidth / vizHeight;
+    if (respCheckbox.checked == true) { // if scaling option is on
+        
+        // get viz dimensions
+        let vizHeight = viz.clientHeight;
+        let vizWidth = viz.clientWidth;
+        const ratio = vizWidth / vizHeight;
 
-    // accepted aspect ratios
-    const maxRatio = 18 / 9;
-    const minRatio = 14 / 9;
+        // accepted aspect ratios
+        const maxRatio = 18 / 9;
+        const minRatio = 14 / 9;
 
-    if (ratio < minRatio) { // viewport ratio is smaller than minimum
-        vizHeight = vizWidth / minRatio;
+        if (ratio < minRatio) { // viewport ratio is smaller than minimum
+            vizHeight = vizWidth / minRatio;
+            viz.classList.remove("widescreen");
+        } else if (ratio >= minRatio && ratio <= maxRatio) { // viewport ratio within accepted range
+            viz.classList.remove("widescreen");
+        } else {
+            vizHeight = vizWidth / maxRatio; // viewport ratio is larger than maximum
+            viz.classList.add("widescreen");
+        }
+
+        const currentWrapW = wrapper.clientWidth;
+        const scale = vizWidth / currentWrapW;
+        const targetWrapH = vizHeight / scale;
+
+        // scale viz down
+        wrapper.style.height = targetWrapH + "px";
+        wrapper.style.transform = "scale(" + scale + "," + scale + ")";
+
+    } else { // if scaling option is off
+
+        // remove sizing styles
         viz.classList.remove("widescreen");
-    } else if (ratio >= minRatio && ratio <= maxRatio) { // viewport ratio within accepted range
-        viz.classList.remove("widescreen");
-    } else {
-        vizHeight = vizWidth / maxRatio; // viewport ratio is larger than maximum
-        viz.classList.add("widescreen");
+        wrapper.style.height = "";
+        wrapper.style.transform = "";
     }
-
-    const currentWrapW = wrapper.clientWidth;
-    const scale = vizWidth / currentWrapW;
-    const targetWrapH = vizHeight / scale;
-
-    // scale viz down
-    wrapper.style.height = targetWrapH + "px";
-    wrapper.style.transform = "scale(" + scale + "," + scale + ")";
 
     resizeSVG();
 }
@@ -926,15 +938,21 @@ function captionDefault() { // create and populate default caption
 
     captionDelete();
 
+    const captionTxt = { // all dynamic text values for caption
+        affCount: masterData.length,
+        catCount: dataInfo.catCount,
+        congCount: commaNumber(dataInfo[dimensions.num])
+    }
+
     // caption A
 
-    const affCountNum = newElement("div", "caption-heading xl small-caps"); // number of nodes (affiliates) in xl text
-    affCountNum.innerText = masterData.length;
+    // number of nodes (affiliates) in xl text
+    const affCountNum = newElement("div", "caption-heading xl small-caps", "", captionTxt.affCount);
 
-    const affCountText = newElement("div", "caption-heading lg"); // the text "denomination affiliates" next to digits
-    affCountText.innerHTML = "Denomination<br>Affiliates";
+    // the text "denomination affiliates" next to digits
+    const affCountText = newElement("div", "caption-heading lg", "", "Denomination<br>Affiliates");
 
-    const captionFlex = newElement("div", "caption-flex"); // container for flex layout
+    const captionFlex = newElement("div", "caption-flex gap-lg"); // container for flex layout
     captionFlex.append(affCountNum);
     captionFlex.append(affCountText);
 
@@ -942,16 +960,11 @@ function captionDefault() { // create and populate default caption
 
     // caption B
 
-    const catCountHead = newElement("div", "caption-dimension-heading");
-    catCountHead.innerHTML = "Faith Traditions";
+    const catCountHead = newElement("div", "caption-dimension-heading", "", "Faith Traditions");
+    const catCountIcon = newElement("figure", "symbol md faith-traditions");
+    const catCountNum = newElement("div", "caption-text", "", captionTxt.catCount);
 
-    const catCountIcon = newElement("img", "icon symbol text-size");
-    catCountIcon.setAttribute("src", "assets/faith_traditions_30px.svg");
-
-    const catCountNum = newElement("div", "caption-text");
-    catCountNum.innerText = categories.length; // NEED TO SUBTRACT "Other" category
-
-    const catCountFlex = newElement("div", "caption-flex text-size");
+    const catCountFlex = newElement("div", "caption-flex gap-md");
     catCountFlex.append(catCountIcon);
     catCountFlex.append(catCountNum);
 
@@ -959,22 +972,21 @@ function captionDefault() { // create and populate default caption
     catCountGroup.append(catCountHead);
     catCountGroup.append(catCountFlex);
 
-    const congCountHead = newElement("div", "caption-dimension-heading");
-    congCountHead.innerHTML = "Congregations";
+    const congCountHead = newElement("div", "caption-dimension-heading", "", "Congregations");
+    const congCountIcon = newElement("figure", "symbol md congregations");
+    // CALCULATE # of congregations
+    const congCountNum = newElement("div", "caption-text", "", captionTxt.congCount);
 
-    const congCountIcon = newElement("img", "icon symbol text-size");
-    congCountIcon.setAttribute("src", "assets/congregations_30px.svg");
-
-    const congCountNum = newElement("div", "caption-text");
-    congCountNum.innerText = commaNumber(dataInfo[dimensions.num]); // CALCULATE # of congregations
-
-    const congCountFlex = newElement("div", "caption-flex text-size");
+    const congCountFlex = newElement("div", "caption-flex gap-md");
     congCountFlex.append(congCountIcon);
     congCountFlex.append(congCountNum);
 
+    const congCountGroup = newElement("div", "caption-group");
+    congCountGroup.append(congCountHead);
+    congCountGroup.append(congCountFlex);
+
     captionB.append(catCountGroup);
-    captionB.append(congCountHead);
-    captionB.append(congCountFlex);
+    captionB.append(congCountGroup);
 };
 
 function captionCategory(dataObj) { // takes category object, creates and populates category caption
@@ -982,39 +994,42 @@ function captionCategory(dataObj) { // takes category object, creates and popula
     captionDelete();
 
     // get catObj
-
     const catObj = categories.find(element => element.name == slashUnderscore(dataObj.id.replace("cat-", ""), true));
+
+    const captionTxt = { // all dynamic text values for caption
+        name: slashBreaks(catObj.name),
+        affCount: catObj.count,
+        congCount: commaNumber(catObj[dimensions.num])
+    }
 
     // caption A
 
-    const catSquare = newElement("div", "icon color-swatch heading-size"); // color square for category
+    const catSquare = newElement("div", "color-swatch lg-category"); // color square for category
     catSquare.style.backgroundColor = catObj.color;
+    // category name in heading
+    const catName = newElement("div", "caption-heading lg", "", captionTxt.name);
 
-    const catName = newElement("div", "caption-heading lg"); // category name in heading
-    catName.innerHTML = slashBreaks(catObj.name); // adds line break for names with "/"
-
-    const catHeading = newElement("div", "caption-flex");
-
-    const catSubHead = newElement("div","caption-subhead-caps space-left");
+    const catSubHead = newElement("div", "caption-subhead-caps");
     catSubHead.innerHTML = "tradition";
 
-    catHeading.append(catSquare);
-    catHeading.append(catName);
+    const catGroup = newElement("div", "caption-group");
+    catGroup.append(catName);
+    catGroup.append(catSubHead);
 
-    captionA.append(catHeading);
-    captionA.append(catSubHead);
+    const catFlex = newElement("div", "caption-flex gap-lg");
+    catFlex.append(catSquare);
+    catFlex.append(catGroup);
+
+    captionA.append(catFlex);
 
     // caption B
 
     // how many affiliates in category
-    const catAffHead = newElement("div", "caption-dimension-heading");
-    catAffHead.innerHTML = "Affiliates";
-    const catAffIcon = newElement("img", "icon symbol text-size");
-    catAffIcon.setAttribute("src", "assets/affiliates_30px.svg");
-    const catAffNum = newElement("div", "caption-text");
-    catAffNum.innerText = catObj.count;
-    
-    const catAffFlex = newElement("div", "caption-flex text-size");
+    const catAffHead = newElement("div", "caption-dimension-heading", "", "Affiliates");
+    const catAffIcon = newElement("figure", "symbol md affiliates");
+    const catAffNum = newElement("div", "caption-text", "", captionTxt.affCount);
+
+    const catAffFlex = newElement("div", "caption-flex gap-md");
     catAffFlex.append(catAffIcon);
     catAffFlex.append(catAffNum);
 
@@ -1023,40 +1038,45 @@ function captionCategory(dataObj) { // takes category object, creates and popula
     catAffGroup.append(catAffFlex);
 
     // how many congregations in category
-    const catCongHead = newElement("div", "caption-dimension-heading");
-    catCongHead.innerHTML = "Congregations"
-    const catCongIcon = newElement("img", "icon symbol text-size");
-    catCongIcon.setAttribute("src","assets/congregations_30px.svg");
-    const catCongNum = newElement("div", "caption-text");
-    catCongNum.innerText = commaNumber(catObj[dimensions.num]);
+    const catCongHead = newElement("div", "caption-dimension-heading", "", "Congregations");
+    const catCongIcon = newElement("figure", "symbol md congregations");
+    const catCongNum = newElement("div", "caption-text", "", captionTxt.congCount);
 
-    const catCongFlex = newElement("div", "caption-flex text-size");
+    const catCongFlex = newElement("div", "caption-flex gap-md");
     catCongFlex.append(catCongIcon);
     catCongFlex.append(catCongNum);
 
+    const catCongGroup = newElement("div", "caption-group");
+    catCongGroup.append(catCongHead);
+    catCongGroup.append(catCongFlex);
+
     captionB.append(catAffGroup);
-    captionB.append(catCongHead);
-    captionB.append(catCongFlex);
+    captionB.append(catCongGroup);
 }
 
 function captionAffiliate(dataObj) { // takes affiliate data object, creates and populates affiliate caption
+
+    const captionTxt = { // all dynamic text values for caption
+        name: dataObj[dimensions.name],
+        affCats: captionAffCats(dataObj[dimensions.cat]),
+        congCount: commaNumber(dataObj[dimensions.num])
+    }
 
     captionDelete();
 
     // caption A
 
     const affHeading = newElement(
-        "div", "caption-heading " + charCountSize(dataObj[dimensions.name])
+        "div",
+        "caption-heading",
+        "",
+        captionTxt.name
     ); // class and size of heading determined by number of characters
-    affHeading.innerHTML = dataObj[dimensions.name];
 
-    const affSubIcon = newElement("img", "icon symbol sub-size");
-    affSubIcon.setAttribute("src", "assets/affiliate_18px.svg");
+    const affSubIcon = newElement("figure", "symbol sm affiliate");
+    const affSubHead = newElement("div", "caption-subhead-caps", "", "affiliate");
 
-    const affSubHead = newElement("div", "caption-subhead-caps");
-    affSubHead.innerHTML = "affiliate";
-
-    const affSubFlex = newElement("div", "caption-flex sub-size");
+    const affSubFlex = newElement("div", "caption-flex gap-sm");
     affSubFlex.append(affSubIcon);
     affSubFlex.append(affSubHead);
 
@@ -1065,30 +1085,31 @@ function captionAffiliate(dataObj) { // takes affiliate data object, creates and
 
     // caption B
 
-    const affCatHead = newElement("div", "caption-dimension-heading");
-    affCatHead.innerHTML = "Faith Tradition";
+    const affCatHead = newElement("div", "caption-dimension-heading", "", "Faith&nbsp;Tradition");
 
     if (dataObj[dimensions.cat].length >= 2) {
         affCatHead.innerHTML += "s"; // plural
     }
 
-    const affCongHead = newElement("div", "caption-dimension-heading");
-    affCongHead.innerHTML = "Congregations";
-    const affCongIcon = newElement("img", "icon symbol text-size");
-    affCongIcon.setAttribute("src", "assets/congregations_30px.svg");
-    const affCongNum = newElement("div", "caption-text");
-    affCongNum.innerText = commaNumber(dataObj[dimensions.num]);
+    const affCatGroup = newElement("div", "caption-group");
+    affCatGroup.append(affCatHead);
+    affCatGroup.append(captionTxt.affCats);
 
-    const affCongFlex = newElement("div", "caption-flex text-size");
+    const affCongHead = newElement("div", "caption-dimension-heading", "", "Congregations");
+
+    const affCongIcon = newElement("figure", "symbol md congregations");
+    const affCongNum = newElement("div", "caption-text", "", captionTxt.congCount);
+
+    const affCongFlex = newElement("div", "caption-flex gap-md");
     affCongFlex.append(affCongIcon);
     affCongFlex.append(affCongNum);
 
-    captionB.append(affCatHead);
-    captionB.append(
-        captionAffCats(dataObj[dimensions.cat])
-    );
-    captionB.append(affCongHead);
-    captionB.append(affCongFlex);
+    const affCongGroup = newElement("div", "caption-group");
+    affCongGroup.append(affCongHead);
+    affCongGroup.append(affCongFlex);
+
+    captionB.append(affCatGroup);
+    captionB.append(affCongGroup);
 }
 
 function captionAffCats(affCats) { // takes dataObj dimensions.cat property
@@ -1099,13 +1120,12 @@ function captionAffCats(affCats) { // takes dataObj dimensions.cat property
 
         const thisCat = categories.find(element => element.name == affCats[i]); // find category object
 
-        const catSquare = newElement("div", "icon color-swatch text-size");
+        const catSquare = newElement("div", "color-swatch md");
         catSquare.style.backgroundColor = thisCat.color;
 
-        const catName = newElement("div", "caption-text");
-        catName.innerText = thisCat.name;
+        const catName = newElement("div", "caption-text", "", thisCat.name);
 
-        const catRef = newElement("div", "caption-flex text-size");
+        const catRef = newElement("div", "caption-flex gap-md");
         catRef.append(catSquare);
         catRef.append(catName);
 
@@ -1145,7 +1165,7 @@ function focusNode(event) {
 
         focusNothing();
 
-        target.classList.add("highlighted"); // re-highlight target node
+        target.classList.add("hl-full"); // re-highlight target node
 
         if (dataObj.type == "category") {
             focusCatAffiliates(dataObj);
@@ -1161,11 +1181,11 @@ function focusNode(event) {
         const targetNode = event.currentTarget;
 
         if ( // targetNode belongs to selectedCat category
-            targetNode.classList.contains (slashUnderscore(selectedCat.__data__[dimensions.cat][0]))
+            targetNode.classList.contains(slashUnderscore(selectedCat.__data__[dimensions.cat][0]))
         ) {
 
             const catAffs = getCatAffs(selectedCat.__data__, true);
-            
+
             changeHighlight(catAffs, false);
 
             changeHighlight([targetNode], true);
@@ -1192,21 +1212,21 @@ function focusNothing() {
     const allNodes = viz.querySelectorAll(".chart-node");
 
     for (let i = 0; i < allNodes.length; i++) {
-        allNodes[i].classList.remove("highlighted"); // un-highlight all nodes
+        allNodes[i].classList.remove("hl-full"); // un-highlight all nodes
         allNodes[i].classList.remove("hl-half");
         allNodes[i].classList.remove("selected"); // un-select all nodes
     }
 }
 
-function changeHighlight(nodes, darken = true) { 
+function changeHighlight(nodes, darken = true) {
     // for each node in nodes array, changes class from hl-half to highlighted or vice versa if darken == false
 
     for (let i = 0; i < nodes.length; i++) {
         if (darken) {
             nodes[i].classList.remove("hl-half");
-            nodes[i].classList.add("highlighted");
+            nodes[i].classList.add("hl-full");
         } else {
-            nodes[i].classList.remove("highlighted");
+            nodes[i].classList.remove("hl-full");
             nodes[i].classList.add("hl-half");
         }
     }
@@ -1324,11 +1344,11 @@ function unfadeAll() { // unfades all nodes, labels, and links
 
 function clickOut(event) { // deselects all nodes and shows default caption
 
-    const foundExceptions = findInPath ( // value == true if found any of the values below
+    const foundExceptions = findInPath( // value == true if found any of the values below
         event.path,
         ["button", "circle"], // tags
         ["chart-node", "chart-label"], // classes
-        ["viz-controls", "viz-footer-content","viz-header-left", "caption-a", "caption-b"] // ids
+        ["file-loader", "viz-controls", "viz-footer-content", "viz-header-left", "caption-a", "caption-b"] // ids
     )
 
     if (!foundExceptions) { // if no tags, classes, ids found
@@ -1363,7 +1383,7 @@ function clickNode(event) { // selects or deselects clicked node
             unfadeAll();
             focusNothing();
 
-            event.currentTarget.classList.add("highlighted");
+            event.currentTarget.classList.add("hl-full");
             event.currentTarget.classList.add("selected");
 
             if (dataObj.type == "category") {
@@ -1387,11 +1407,11 @@ function clickNode(event) { // selects or deselects clicked node
             fadeOtherNodes(event);
 
             nodeSelected = true;
-            if (dataObj.type == "category") {catSelected = true;}
+            if (dataObj.type == "category") { catSelected = true; }
 
         } else { // if clicking to select immediately after de-selecting the same node
 
-            event.currentTarget.classList.add("highlighted");
+            event.currentTarget.classList.add("hl-full");
             event.currentTarget.classList.add("selected");
 
             if (dataObj.type == "category") {
@@ -1429,7 +1449,7 @@ function clickLabel(event) { // selects or deselects node based on clicked label
             unfadeAll();
             focusNothing();
 
-            refNode.classList.add("highlighted");
+            refNode.classList.add("hl-full");
             refNode.classList.add("selected");
 
             if (dataObj.type == "category") {
@@ -1453,11 +1473,11 @@ function clickLabel(event) { // selects or deselects node based on clicked label
             fadeOtherNodes(event);
 
             nodeSelected = true;
-            if (dataObj.type == "category") {catSelected = true;}
+            if (dataObj.type == "category") { catSelected = true; }
 
         } else { // if clicking to select immediately after de-selecting the same node
 
-            refNode.classList.add("highlighted");
+            refNode.classList.add("hl-full");
             refNode.classList.add("selected");
 
             if (dataObj.type == "category") {
@@ -1503,8 +1523,8 @@ function toggleFullScreen() {
 }
 
 function fsButton() { // changes icon on full-screen button
-    buttonFullScreen.querySelector("#enter").classList.toggle("visible");
-    buttonFullScreen.querySelector("#exit").classList.toggle("visible");
+    buttonFullScreen.querySelector("#enter").classList.toggle("invisible");
+    buttonFullScreen.querySelector("#exit").classList.toggle("invisible");
 }
 
 
@@ -1516,6 +1536,7 @@ function fsButton() { // changes icon on full-screen button
 
 window.onload = function () {
 
+    respCheckbox.checked = true; // scaling option on by default
     resizeViz();
 
     if (window.location.protocol !== 'file:') { // start viz automatically only if page is running from server
