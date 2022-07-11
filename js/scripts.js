@@ -6,8 +6,7 @@ let dataSrc,
     masterData,
     categories,
     vizNodes,
-    vizLinks,
-    catColors;
+    vizLinks;
 
 // D3 variables
 
@@ -40,6 +39,7 @@ const respCheckbox = viz.querySelector("#responsive-checkbox");
 const labels = viz.querySelector("#viz-chart-labels");
 const footer = viz.querySelector("#viz-footer");
 const buttonFullScreen = viz.querySelector("#button-fs");
+const textFullScreen = viz.querySelector("#text-fs");
 
 // D3 elements
 const labelsD3 = d3.select("#viz-chart-labels");
@@ -65,20 +65,6 @@ dimensions = { // which columns of spreadsheet to use for viz
 }
 
 dataInfo = new Object(); // stores properties relating to entire masterData array
-
-catColors = {
-    "Anabaptist": "#E89A04",
-    "Anglican/Episcopal": "#1B6401",
-    "Baptist": "#0A709B",
-    "Holiness": "#3BA773",
-    "Lutheran": "#00B2BD",
-    "Pentecostal/Charismatic": "#FD291B",
-    "Pietist": "#FF7CAB",
-    "Reformed": "#8D1D8D",
-    "Restorationist": "#CABB35",
-    "Mainline": "#E1730D",
-    "Other": "#6C6C6C"
-}
 
 /* masterData obj custom properties
     {
@@ -161,6 +147,10 @@ function deleteChar(str, chars = [","], from = "end") { // delete chars from sta
                 str = str.substring(1, str.length);
             }
         }
+    }
+
+    for (let i = 0; i < str.split(" ").length - 1; i++) { // delete spaces
+        str = str.replace(" ", "");
     }
 
     return str;
@@ -296,6 +286,21 @@ function slashUnderscore(str, reverse = false) { // replaces "/" with "_"
 }
 
 function getColor(dataObj) {
+
+    const catColors = { // array of assigned colours
+        "Anabaptist": "#E89A04",
+        "Anglican/Episcopal": "#1B6401",
+        "Baptist": "#0A709B",
+        "Holiness": "#3BA773",
+        "Lutheran": "#00B2BD",
+        "Pentecostal/Charismatic": "#FD291B",
+        "Pietist": "#FF7CAB",
+        "Reformed": "#8D1D8D",
+        "Restorationist": "#CABB35",
+        "Mainline": "#E1730D",
+        "Other": "#6C6C6C"
+    }
+
     if (dataObj.type !== "origin") {
         for (let i = 0; i < dataObj[dimensions.cat].length; i++) {
             if (catColors[dataObj[dimensions.cat][i]]) { // first color that exists
@@ -388,6 +393,15 @@ function formatData(data) { // sorts and formats data objects, returns sorted/fo
 
     for (let i = 0; i < data.length; i++) { // for each data object
 
+        // alert if name is too long
+        if (data[i][dimensions.name].length > 60) {
+
+            let message = 'WARNING: The name of the affiliate "' + data[i][dimensions.name] + '" in row ' + (i + 1) + ' exceeds 60 characters. Please consider updating data.csv and shortening this name.';
+
+            alert(message);
+            console.error(message);
+        }
+
         // convert "#N/A" and "" to "Other"
         data[i][dimensions.cat] = data[i][dimensions.cat].replace("#N/A", "Other");
         if (data[i][dimensions.cat] == "") {
@@ -398,8 +412,30 @@ function formatData(data) { // sorts and formats data objects, returns sorted/fo
         data[i][dimensions.cat] = deleteChar(data[i][dimensions.cat]);
         data[i][dimensions.cat] = data[i][dimensions.cat].split(",");
 
+        // alert if congregations value doesn't exist
+        if (
+            data[i][dimensions.num] == "" || 
+            data[i][dimensions.num] == undefined ||
+            data[i][dimensions.num] == null ||
+            !data[i][dimensions.num]
+        ) {
+            let message = 'ERROR: The value in row ' + (i + 1) + ' for the column "Congregations" does not exist. Please update data.csv and add a number value.'
+
+            alert(message);
+            console.error(message);
+        }
+
         // convert numbers (congregations) to float
         data[i][dimensions.num] = parseFloat(data[i][dimensions.num]);
+
+        // alert if congregations value is not a number
+        if (data[i][dimensions.num] == NaN) {
+
+            let message = 'ERROR: The value in row ' + (i + 1) + ' for the column "Congregations" is not a valid number. Please update data.csv and remove any letters, punctuation, and/or special characters.'
+
+            alert(message);
+            console.error(message)
+        }
 
         // count total congregations
         if (!dataInfo[dimensions.num]) { dataInfo[dimensions.num] = 0; }
@@ -476,7 +512,7 @@ function makeCategories(data) { // create category objects for nodes
                 let catObj = {
                     name: newCat[k],
                     count: 1,
-                    color: catColors[newCat[k]]
+                    color: getColor(data[j])
                 }
                 catObj[dimensions.num] = data[j][dimensions.num];
 
@@ -1527,7 +1563,14 @@ function fsButton() { // changes icon on full-screen button
     buttonFullScreen.querySelector("#exit").classList.toggle("invisible");
 }
 
-
+function fsText (status) { // toggle "enter" and "exit" in full-screen button label text
+    
+    if (status && textFullScreen.innerHTML.indexOf("enter") != -1) {
+        textFullScreen.innerHTML = textFullScreen.innerHTML.replace("enter", "exit");
+    } else if (!status && textFullScreen.innerHTML.indexOf("exit") != -1) {
+        textFullScreen.innerHTML = textFullScreen.innerHTML.replace("exit", "enter");
+    }
+}
 
 
 
@@ -1562,7 +1605,9 @@ viz.onclick = clickOut;
 buttonFullScreen.onclick = toggleFullScreen;
 
 document.addEventListener("fullscreenchange", function () {
+    
     resizeViz();
     fsButton();
     fullScreen = !fullScreen;
+    fsText(fullScreen);
 });
