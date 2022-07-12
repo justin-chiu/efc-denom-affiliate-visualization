@@ -1384,12 +1384,23 @@ function unfadeAll() { // unfades all nodes, labels, and links
 
 function clickOut(event) { // deselects all nodes and shows default caption
 
-    const foundExceptions = findInPath( // value == true if found any of the values below
-        event.path,
-        ["button", "circle"], // tags
-        ["chart-node", "chart-label"], // classes
-        ["file-loader", "viz-controls", "viz-footer-content", "viz-header-left", "caption-a", "caption-b"] // ids
-    )
+    let foundExceptions = false;
+
+    if (event.path) {
+        foundExceptions = findInPath( // value == true if found any of the values below
+            event.path || (event.composedPath && event.composedPath()),
+            ["button", "circle"], // tags
+            ["chart-node", "chart-label"], // classes
+            ["file-loader", "viz-controls", "viz-footer-content", "viz-header-left", "caption-a", "caption-b"] // ids
+        )
+    } else if ( // for Fiferfox
+        event.target.tagName == "circle"
+        || event.target.classList.contains("chart-label")
+        || event.target.tagName == "button"
+        || event.target.tagName == "input"
+    ) {
+        foundExceptions = true;
+    }
 
     if (!foundExceptions) { // if no tags, classes, ids found
         unfadeAll();
