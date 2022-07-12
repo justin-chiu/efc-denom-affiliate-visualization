@@ -156,9 +156,12 @@ function deleteChar(str, chars = [","], from = "end") { // delete chars from sta
     return str;
 }
 
-function orderArray(array, dimension = dimensions.num, reverse = false) { // false returns array with items ordered largest to smallest
+function orderArray(array, dimension = dimensions.num, reverse = false, compareFunction = false) { // false returns array with items ordered largest to smallest, or reverse alphabetical order
 
-    const compareFunction = compareByDimension(dimension); // get a compare function for specified dimension
+    
+    if (!compareFunction) { // if custom compare function not specified
+        compareFunction = compareByDimension(dimension); // get a compare function for specified dimension
+    }
 
     array.sort(compareFunction);
 
@@ -285,7 +288,7 @@ function slashUnderscore(str, reverse = false) { // replaces "/" with "_"
     return newStr;
 }
 
-function getColor(dataObj) {
+function getColor(dataObj, index = 0) {
 
     const catColors = { // array of assigned colours
         "Anabaptist": "#E89A04",
@@ -302,13 +305,12 @@ function getColor(dataObj) {
     }
 
     if (dataObj.type !== "origin") {
-        for (let i = 0; i < dataObj[dimensions.cat].length; i++) {
-            if (catColors[dataObj[dimensions.cat][i]]) { // first color that exists
-                return catColors[dataObj[dimensions.cat][i]];
-            } else {
-                return catColors["Other"];
-            }
+        if (catColors[dataObj[dimensions.cat][index]]) {
+            return catColors[dataObj[dimensions.cat][index]];
+        } else {
+            return catColors["Other"];
         }
+
     } else {
         return "#32475C";
     }
@@ -369,6 +371,9 @@ function getCatAffs(dataObj, getCatNode = false) { // returns array of nodes bas
     const catAffs = chartSVG.querySelectorAll(selector); // all nodes with category class
     return catAffs;
 }
+
+
+
 
 
 
@@ -511,8 +516,7 @@ function makeCategories(data) { // create category objects for nodes
 
                 let catObj = {
                     name: newCat[k],
-                    count: 1,
-                    color: getColor(data[j])
+                    count: 1
                 }
                 catObj[dimensions.num] = data[j][dimensions.num];
 
@@ -681,7 +685,7 @@ function defineViz() {
             strength: {
                 origin: -500,
                 category: -800,
-                affiliate: -600
+                affiliate: -650
             }
         },
         center: {
@@ -693,8 +697,8 @@ function defineViz() {
             y: svgHeight / 2,
             radius: {
                 origin: 0,
-                category: svgHeight * 0.25,
-                affiliate: svgHeight * 0.3
+                category: svgHeight * 0.23,
+                affiliate: svgHeight * 0.28
             },
             strength: {
                 origin: 0,
@@ -889,7 +893,7 @@ function defineViz() {
 
 function ticked() {
 
-    let xStretch = 2.3; // stretch the diagram
+    let xStretch = 2.4; // stretch the diagram
     let xOffset = svgWidth / 2;
 
     svgLink
@@ -1041,7 +1045,7 @@ function captionCategory(dataObj) { // takes category object, creates and popula
     // caption A
 
     const catSquare = newElement("div", "color-swatch lg-category"); // color square for category
-    catSquare.style.backgroundColor = catObj.color;
+    catSquare.style.backgroundColor = getColor(dataObj);
     // category name in heading
     const catName = newElement("div", "caption-heading lg", "", captionTxt.name);
 
@@ -1094,7 +1098,7 @@ function captionAffiliate(dataObj) { // takes affiliate data object, creates and
 
     const captionTxt = { // all dynamic text values for caption
         name: dataObj[dimensions.name],
-        affCats: captionAffCats(dataObj[dimensions.cat]),
+        affCats: captionAffCats(dataObj),
         congCount: commaNumber(dataObj[dimensions.num])
     }
 
@@ -1148,16 +1152,16 @@ function captionAffiliate(dataObj) { // takes affiliate data object, creates and
     captionB.append(affCongGroup);
 }
 
-function captionAffCats(affCats) { // takes dataObj dimensions.cat property
+function captionAffCats(dataObj) { // takes dataObj dimensions.cat property
 
     const catContainer = newElement("div", "caption-group"); // container for all category references
 
-    for (let i = 0; i < affCats.length; i++) { // for each of dataObj's categories
+    for (let i = 0; i < dataObj[dimensions.cat].length; i++) { // for each of dataObj's categories
 
-        const thisCat = categories.find(element => element.name == affCats[i]); // find category object
+        const thisCat = categories.find(element => element.name == dataObj[dimensions.cat][i]); // find category object
 
         const catSquare = newElement("div", "color-swatch md");
-        catSquare.style.backgroundColor = thisCat.color;
+        catSquare.style.backgroundColor = getColor(dataObj, i);
 
         const catName = newElement("div", "caption-text", "", thisCat.name);
 
@@ -1571,6 +1575,8 @@ function fsText (status) { // toggle "enter" and "exit" in full-screen button la
         textFullScreen.innerHTML = textFullScreen.innerHTML.replace("exit", "enter");
     }
 }
+
+
 
 
 
