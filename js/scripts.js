@@ -81,16 +81,9 @@ dataInfo = new Object(); // stores properties relating to entire masterData arra
 
 // ------STARTING THE VIZ------
 
-function startFromServer(offlineURL, onlineURL, online = false) { // takes relative path to CSV file, reads and returns data as array of data objects
-
-    if (online) {
-        fetch(onlineURL)
-            .then(response => response.json())
-            .then(response => runViz(response));
-    } else { // offline but with live server
-        d3.csv(offlineURL)
-            .then(function (d) { runViz(d); });
-    }
+function startFromServer(url) { // takes relative path to CSV file, reads and returns data as array of data objects
+    d3.csv(url)
+        .then(function (d) { runViz(d); });
 }
 
 function startFromUpload(input) {
@@ -1600,11 +1593,10 @@ window.onload = function () {
     resizeViz();
 
     if (window.location.protocol !== 'file:') { // start viz automatically only if page is running from server
-        startFromServer(
-            dataSrc.csv, // offline data source
-            getAPI_URL(dataSrc.url, dataSrc.sheetName), // online data source
-            false // false --> run the viz based on an offline data source
-        );
+        
+        let path = window.location.protocol + "//" + window.location.host + window.location.pathname + "data/data.csv";
+        startFromServer(path);
+
     } else { // start viz on file upload if page is running
         fileLoader.classList.remove("loader-hide"); // show file uploader
         fileUpload.onchange = function () { // when user uploads data file
